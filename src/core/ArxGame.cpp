@@ -1785,6 +1785,8 @@ void ArxGame::render() {
 	// Updates Externalview
 	EXTERNALVIEW = false;
 
+	GRenderer->BeginPostProcess();
+
 	if(isInMenu()) {
 		renderMenu();
 	} else if(isInCinematic()) {
@@ -1813,6 +1815,8 @@ void ArxGame::render() {
 		}
 		GRenderer->EndScene();
 	}
+
+	GRenderer->EndPostProcess();
 	
 	if (LaunchDemo)
 	{

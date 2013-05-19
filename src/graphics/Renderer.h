@@ -131,6 +131,9 @@ public:
 	// Scene begin/end...
 	virtual void BeginScene() = 0;
 	virtual void EndScene() = 0;
+
+	virtual void BeginPostProcess() = 0;
+	virtual void EndPostProcess() = 0;
 	
 	// Matrices
 	virtual void SetViewMatrix(const EERIEMATRIX & matView) = 0;

@@ -610,6 +610,7 @@ set(GRAPHICS_OPENGL_SOURCES
 	src/graphics/opengl/GLTexture2D.cpp
 	src/graphics/opengl/GLTextureStage.cpp
 	src/graphics/opengl/OpenGLRenderer.cpp
+	src/graphics/opengl/OpenGLPostProcessing.cpp
 )
 
 set(GUI_SOURCES

@@ -193,6 +193,8 @@ void OpenGLRenderer::reinit() {
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maximumAnisotropy);
 		CHECK_GL;
 	}
+
+	postProcessing = new OpenGLPostProcesing(Rect(640, 480));
 	
 	initialized = true;
 }
@@ -220,8 +222,16 @@ void OpenGLRenderer::BeginScene() {
 }
 
 void OpenGLRenderer::EndScene() {
-	
-	glFlush();
+}
+
+void OpenGLRenderer::BeginPostProcess() {
+	if(postProcessing)
+		postProcessing->attach();
+}
+
+void OpenGLRenderer::EndPostProcess() {
+	if(postProcessing)
+		postProcessing->render();
 }
 
 static EERIEMATRIX projection;
@@ -430,6 +440,9 @@ void OpenGLRenderer::SetBlendFunc(PixelBlendingFactor srcFactor, PixelBlendingFa
 void OpenGLRenderer::SetViewport(const Rect & _viewport) {
 	
 	viewport = _viewport;
+
+	if(postProcessing)
+		postProcessing->resize(_viewport);
 	
 	// TODO maybe it's better to always have the viewport cover the whole window and use glScissor instead?
 	

@@ -26,6 +26,8 @@
 #include "graphics/opengl/GLTexture2D.h"
 #include "math/Rectangle.h"
 
+#include "OpenGLPostProcessing.h"
+
 class GLTextureStage;
 
 class OpenGLRenderer : public Renderer {
@@ -43,6 +45,9 @@ public:
 	// Scene begin/end...
 	void BeginScene();
 	void EndScene();
+
+	void BeginPostProcess();
+	void EndPostProcess();
 	
 	// Matrices
 	void SetViewMatrix(const EERIEMATRIX & matView);
@@ -142,7 +147,8 @@ private:
 	TextureList textures;
 
 	bool initialized;
-	
+
+	OpenGLPostProcesing * postProcessing;
 };
 
 template <class Vertex>
