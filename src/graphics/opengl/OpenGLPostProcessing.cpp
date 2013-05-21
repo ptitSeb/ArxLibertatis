@@ -235,6 +235,8 @@ void OpenGLPostProcesing::attach()
 
 void OpenGLPostProcesing::render()
 {
+	glDisable(GL_CULL_FACE);
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, mSize.right, mSize.bottom);
 	glClearColor(0.0, 0.0, 0.0, 1.0);
