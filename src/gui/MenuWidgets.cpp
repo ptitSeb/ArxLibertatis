@@ -330,7 +330,8 @@ static void FadeInOut(float _fVal)
 	GRenderer->SetRenderState(Renderer::DepthTest, false);
 	GRenderer->SetCulling(Renderer::CullNone);
 
-	EERIEDRAWPRIM(Renderer::TriangleStrip, d3dvertex, 4, true);
+	//FIXME rtt this causes a black main menu
+	//EERIEDRAWPRIM(Renderer::TriangleStrip, d3dvertex, 4, true);
 
 	GRenderer->SetRenderState(Renderer::AlphaBlending, false);
 	GRenderer->SetRenderState(Renderer::DepthWrite, true);

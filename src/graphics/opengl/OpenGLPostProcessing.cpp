@@ -262,5 +262,7 @@ void OpenGLPostProcesing::render()
 				);
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
 	glDisableVertexAttribArray(attribute_v_coord_postproc);
+	glUseProgram(0);
 }
