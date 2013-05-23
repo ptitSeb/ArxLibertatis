@@ -222,7 +222,7 @@ void OpenGLPostProcesing::resize(Rect size)
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo_depth);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, mSize.right, mSize.bottom);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mSize.right, mSize.bottom);
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 }
 
