@@ -19,8 +19,6 @@
 
 #include "OpenGLPostProcessing.h"
 
-#include "debug/debug.h"
-
 static bool checkShader(GLuint object, const char * op, GLuint check) {
 
 	GLint status;
