@@ -38,6 +38,10 @@ public:
 	// Scene begin/end...
 	void BeginScene();
 	void EndScene();
+
+	// No DX love!
+	virtual void BeginPostProcess() {}
+	virtual void EndPostProcess() {}
 	
 	// Matrices
 	void SetViewMatrix(const EERIEMATRIX & matView);
