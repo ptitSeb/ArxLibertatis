@@ -235,6 +235,9 @@ void OpenGLPostProcesing::attach()
 
 void OpenGLPostProcesing::render()
 {
+	GLuint oldProgram;
+	glGetIntegerv(GL_CURRENT_PROGRAM, (GLint*) &oldProgram);
+
 	glDisable(GL_CULL_FACE);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -264,5 +267,6 @@ void OpenGLPostProcesing::render()
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 	glDisableVertexAttribArray(attribute_v_coord_postproc);
-	glUseProgram(0);
+
+	glUseProgram(oldProgram);
 }
