@@ -107,6 +107,8 @@ ZeniMax Media Inc., Suite 120, Rockville, Maryland 20850 USA.
 #include "math/Vector2.h"
 #include "math/Vector3.h"
 
+#include "platform/profiler/Profiler.h"
+
 #include "physics/Box.h"
 #include "physics/Collisions.h"
 
@@ -2385,6 +2387,8 @@ extern unsigned long REQUEST_JUMP;
 //-----------------------------------------------------------------------------
 void ArxGame::ManagePlayerControls()
 {
+	ARX_PROFILE_FUNC();
+
 	if (((EERIEMouseButton & 4) && (!EDITMODE) && !(player.Interface & INTER_COMBATMODE))
 		&& (!player.doingmagic)
 		&& (!(ARX_MOUSE_OVER & ARX_MOUSE_OVER_BOOK))
@@ -6390,6 +6394,8 @@ extern long SPLASH_THINGS_STAGE;
 
 void ArxGame::DrawAllInterface() {
 	
+	ARX_PROFILE_FUNC();
+
 	GRenderer->GetTextureStage(0)->SetMinFilter(TextureStage::FilterLinear);
 	GRenderer->GetTextureStage(0)->SetMagFilter(TextureStage::FilterNearest);
 	GRenderer->GetTextureStage(0)->SetWrapMode(TextureStage::WrapClamp);

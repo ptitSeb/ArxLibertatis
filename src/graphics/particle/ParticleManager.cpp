@@ -73,6 +73,8 @@ void ParticleManager::AddSystem(ParticleSystem * _pPS) {
 //-----------------------------------------------------------------------------
 void ParticleManager::Update(long _lTime)
 {
+	ARX_PROFILE_FUNC();
+
 	if (listParticleSystem.empty()) return;
 
 	list<ParticleSystem *>::iterator i;
@@ -99,6 +101,8 @@ void ParticleManager::Update(long _lTime)
 
 void ParticleManager::Render()
 {
+	ARX_PROFILE_FUNC();
+
 	int ilekel = 0;
 	list<ParticleSystem *>::iterator i;
 

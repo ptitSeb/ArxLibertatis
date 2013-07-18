@@ -76,6 +76,8 @@ ZeniMax Media Inc., Suite 120, Rockville, Maryland 20850 USA.
 
 #include "io/log/Logger.h"
 
+#include "platform/profiler/Profiler.h"
+
 #include "scene/Light.h"
 #include "scene/Interactive.h"
 
@@ -1536,7 +1538,8 @@ void ARX_PORTALS_Frustrum_RenderRoomsTCullSoft(long prec,long tim)
 }
 void ARX_PORTALS_RenderRoom(long room_num,EERIE_2D_BBOX * bbox,long prec,long tim)
 {
-	
+	ARX_PROFILE_FUNC();
+
 	if (RoomDraw[room_num].count)
 	{
 		EERIEDraw2DRect(bbox->min.x, bbox->min.y ,bbox->max.x, bbox->max.y, 0.0001f, Color::blue);
@@ -2803,6 +2806,8 @@ long MAX_FRAME_COUNT=0;
 ///////////////////////////////////////////////////////////
 void ARX_SCENE_Render(long flag) {
 	
+	ARX_PROFILE_FUNC();
+
 	FRAME_COUNT++;
 
 	if (FRAME_COUNT>MAX_FRAME_COUNT) FRAME_COUNT=0;

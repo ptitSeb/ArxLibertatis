@@ -88,6 +88,7 @@ ZeniMax Media Inc., Suite 120, Rockville, Maryland 20850 USA.
 #include "math/Vector3.h"
 
 #include "platform/Platform.h"
+#include "platform/profiler/Profiler.h"
 
 #include "scene/Object.h"
 #include "scene/GameSound.h"
@@ -575,6 +576,8 @@ void EERIEDrawAnimQuat(EERIE_3DOBJ * eobj,
                        bool render,
                        bool update_movement) {
 	
+	ARX_PROFILE_FUNC();
+
 	if(io && io != entities.player()) {
 		
 		float speedfactor = io->basespeed+io->speed_modif;

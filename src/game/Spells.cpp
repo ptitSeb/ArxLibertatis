@@ -5696,7 +5696,8 @@ float ARX_SPELLS_ApplyColdProtection(Entity * io,float damages)
 //*************************************************************************************
 void ARX_SPELLS_Update()
 {
-	
+	ARX_PROFILE_FUNC();
+
 	unsigned long tim;
 	long framediff,framediff3;
 
