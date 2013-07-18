@@ -115,6 +115,7 @@ ZeniMax Media Inc., Suite 120, Rockville, Maryland 20850 USA.
 
 #include "platform/Flags.h"
 #include "platform/Platform.h"
+#include "platform/profiler/Profiler.h"
 
 #include "scene/ChangeLevel.h"
 #include "scene/Interactive.h"
@@ -589,7 +590,8 @@ void ArxGame::Run() {
 	BeforeRun();
 	
 	while(m_RunLoop) {
-		
+		ARX_PROFILE(Main Loop);
+
 		m_MainWindow->tick();
 		if(!m_RunLoop) {
 			break;
@@ -618,7 +620,9 @@ void ArxGame::FrameMove() {
 // Draws the scene.
 //*************************************************************************************
 void ArxGame::Render3DEnvironment() {
-		
+	
+	ARX_PROFILE_FUNC();
+
 	FrameMove();
 	
 	Render();
@@ -787,6 +791,8 @@ bool ArxGame::BeforeRun() {
 
 void ArxGame::Render() {
 	
+	ARX_PROFILE_FUNC();
+
 	arxtime.update_frame_time();
 
 	// before modulation by "GLOBAL_SLOWDOWN"
@@ -814,8 +820,11 @@ void ArxGame::Render() {
 
 	if (GInput->isKeyPressedNowPressed(Keyboard::Key_F12))
 	{
+		/*
 		EERIE_PORTAL_ReleaseOnlyVertexBuffer();
 		ComputePortalVertexBuffer();
+		*/
+		Profiler::instance().flush();
 	}
 
 	ACTIVECAM = &subj;

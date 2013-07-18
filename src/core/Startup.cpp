@@ -60,6 +60,7 @@
 #include "platform/Compiler.h"
 #include "platform/CrashHandler.h"
 #include "platform/Environment.h"
+#include "platform/profiler/Profiler.h"
 #include "platform/ProgramOptions.h"
 #include "platform/Time.h"
 #include "util/String.h"
@@ -168,6 +169,8 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
 		}
 		
 		Time::init();
+
+		Profiler::init();
 		
 		// 14: Start the game already!
 		LogInfo << "Starting " << arx_version;
