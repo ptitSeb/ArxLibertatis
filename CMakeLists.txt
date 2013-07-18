@@ -1089,6 +1089,96 @@ endif()
 
 if(BUILD_TOOLS)
 	
+	if(HAVE_QT5)
+		
+		add_definitions(
+			${Qt5Core_DEFINITIONS}
+			${Qt5Gui_DEFINITIONS}
+			${Qt5Widgets_DEFINITIONS}
+			-DQT_NO_DEBUG
+		)
+		
+		include_directories(SYSTEM
+			${Qt5Core_INCLUDE_DIRS}
+			${Qt5Gui_INCLUDE_DIRS}
+			${Qt5Widgets_INCLUDE_DIRS}
+		)
+		
+	elseif(HAVE_QT4)
+		
+		add_definitions(${QT_DEFINITIONS} -DQT_NO_DEBUG)
+		
+		include_directories(SYSTEM
+			${QT_INCLUDE_DIR}
+			${QT_QTCORE_INCLUDE_DIR}
+			${QT_QTGUI_INCLUDE_DIR}
+		)
+		
+	endif()
+	
+	set(arxprofiler_SOURCES
+		tools/profiler/ProfilerMain.cpp
+		tools/profiler/ui/ArxProfiler.h
+		tools/profiler/ui/ArxProfiler.cpp
+		"${VERSION_FILE}"
+	)
+		
+	set(arxprofiler_UIs
+		tools/profiler/ui/ArxProfiler.ui
+	)
+	
+	set(arxprofiler_MOC_HEADERS
+		tools/profiler/ui/ArxProfiler.h
+	)
+	
+	set(arxprofiler_RESOURCES
+		tools/profiler/resources/ArxProfiler.qrc
+	)
+	
+	set(arxprofiler_MANUAL_SOURCES "${arxprofiler_SOURCES}")
+	
+	set(SRC_DIR tools/profiler/)
+	
+	create_source_groups(arxprofiler_SOURCES)
+	
+	set(arxprofiler_LIBRARIES
+		${BASE_LIBRARIES}
+		${CMAKE_THREAD_LIBS_INIT}
+	)
+	
+	if(HAVE_QT5)
+		
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Core_EXECUTABLE_COMPILE_FLAGS}")
+		
+		qt5_wrap_ui(arxprofiler_SOURCES ${arxprofiler_UIs})
+		qt5_wrap_cpp(arxprofiler_SOURCES ${arxprofiler_MOC_HEADERS})
+		qt5_add_resources(arxprofiler_SOURCES ${arxprofiler_RESOURCES})
+		
+		list(APPEND arxprofiler_LIBRARIES
+			${Qt5Widgets_LIBRARIES}
+			${Qt5Network_LIBRARIES}
+		)
+		
+	elseif(HAVE_QT4)
+		
+		qt4_wrap_ui(arxprofiler_SOURCES ${arxprofiler_UIs})
+		qt4_wrap_cpp(arxprofiler_SOURCES ${arxprofiler_MOC_HEADERS})
+		qt4_add_resources(arxprofiler_SOURCES ${arxprofiler_RESOURCES})
+		
+		list(APPEND arxprofiler_LIBRARIES
+			${QT_QTCORE_LIBRARY_RELEASE}
+			${QT_QTGUI_LIBRARY_RELEASE}
+		)
+		
+	endif()
+	
+	add_executable_shared(arxprofiler WIN32 "${arxprofiler_SOURCES}"
+	                      "${arxprofiler_LIBRARIES}" "" "${CMAKE_INSTALL_LIBEXECDIR}")
+	
+endif()
+
+if(BUILD_TOOLS)
+	
 	set(arxsavetool_SOURCES
 		${PLATFORM_SOURCES}
 		${IO_FILESYSTEM_SOURCES}
