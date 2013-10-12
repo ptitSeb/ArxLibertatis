@@ -20,14 +20,25 @@
 #include "graphics/opengl/OpenGLRenderer.h"
 
 #include "core/Application.h"
+#ifdef HAVE_GLES
+#define glClearDepth	glClearDepthf
+#define glFogi			glFogf
+#include "graphics/opengl/GLESNoVertex.h"
+#else
 #include "graphics/opengl/GLNoVertexBuffer.h"
+#endif
 #include "graphics/opengl/GLTexture2D.h"
 #include "graphics/opengl/GLTextureStage.h"
+#ifdef HAVE_GLES
+//#include "graphics/opengl/GLESVertexBuffer.h"
+#else
 #include "graphics/opengl/GLVertexBuffer.h"
+#endif
 #include "io/log/Logger.h"
 #include "platform/CrashHandler.h"
 #include "window/RenderWindow.h"
 
+#ifndef HAVE_GLES
 static const char vertexShaderSource[] = "void main() {\n"
 	"	// Convert pre-transformed D3D vertices to OpenGL vertices.\n"
 	"	float w = 1.0 / gl_Vertex.w;\n"
@@ -38,7 +49,7 @@ static const char vertexShaderSource[] = "void main() {\n"
 	"	gl_TexCoord[0] = gl_MultiTexCoord0;\n"
 	"	gl_FogFragCoord = vertex.z;\n"
 	"}\n";
-
+#endif
 OpenGLRenderer::OpenGLRenderer() : useVertexArrays(false), useVBOs(false), maxTextureStage(0), shader(0), maximumAnisotropy(1.f), initialized(false) { }
 
 OpenGLRenderer::~OpenGLRenderer() {
@@ -61,7 +72,9 @@ enum GLTransformMode {
 static GLTransformMode currentTransform;
 
 static bool checkShader(GLuint object, const char * op, GLuint check) {
-	
+#ifdef HAVE_GLES
+	return false;
+#else
 	GLint status;
 	glGetObjectParameterivARB(object, check, &status);
 	if(!status) {
@@ -73,12 +86,12 @@ static bool checkShader(GLuint object, const char * op, GLuint check) {
 		delete[] log;
 		return false;
 	}
-	
 	return true;
+#endif
 }
 
 static GLuint loadVertexShader(const char * source) {
-	
+#ifndef HAVE_GLES
 	GLuint shader = glCreateProgramObjectARB();
 	if(!shader) {
 		LogWarning << "Failed to create program object";
@@ -110,16 +123,19 @@ static GLuint loadVertexShader(const char * source) {
 	}
 	
 	return shader;
+#else
+	return 0;
+#endif
 }
 
 void OpenGLRenderer::Initialize() {
-	
+#ifndef HAVE_GLES
 	if(glewInit() != GLEW_OK) {
 		LogError << "GLEW init failed";
 	}
-	
+
 	CrashHandler::setVariable("GLEW version", glewGetString(GLEW_VERSION));
-	
+#endif	
 	LogInfo << "Using OpenGL " << glGetString(GL_VERSION);
 	CrashHandler::setVariable("OpenGL version", glGetString(GL_VERSION));
 	
@@ -135,23 +151,28 @@ void OpenGLRenderer::Initialize() {
 void OpenGLRenderer::reinit() {
 	
 	arx_assert(!initialized);
-	
+#ifdef HAVE_GLES
+	useVertexArrays = false;
+#else	
 	if(!GLEW_ARB_vertex_array_bgra) {
 		LogWarning << "Missing OpenGL extension ARB_vertex_array_bgra, not using vertex arrays!";
 	}
 	useVertexArrays = GLEW_ARB_vertex_array_bgra == GL_TRUE;
-	
 	if(!GLEW_ARB_draw_elements_base_vertex) {
 		LogWarning << "Missing OpenGL extension ARB_draw_elements_base_vertex!";
 	}
+#endif
 	
+#ifdef HAVE_GLES
+	useVBOs = false;
+#else
 	useVBOs = useVertexArrays;
 	if(useVBOs && !GLEW_ARB_map_buffer_range) {
 		LogWarning << "Missing OpenGL extension ARB_map_buffer_range, VBO performance will suffer.";
 	}
 	
 	glEnable(GL_POLYGON_OFFSET_FILL);
-	
+#endif
 	glDepthFunc(GL_LEQUAL);
 	
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -171,10 +192,13 @@ void OpenGLRenderer::reinit() {
 	Clear(ColorBuffer | DepthBuffer);
 	
 	currentTransform = GL_UnsetTransform;
-	switchVertexArray(GL_NoArray, 0, 0);
+#ifndef HAVE_GLES
+	glArrayClientState = GL_NoArray;
+#endif
 	
 	CHECK_GL;
 	
+#ifndef HAVE_GLES
 	if(useVertexArrays && useVBOs) {
 		if(!GLEW_ARB_shader_objects) {
 			LogWarning << "Missing OpenGL extension ARB_shader_objects.";
@@ -188,8 +212,12 @@ void OpenGLRenderer::reinit() {
 			LogWarning << "Missing vertex shader, cannot use vertex arrays for pre-transformed vertices.";
 		}
 	}
+#endif
 	
-	if(GLEW_EXT_texture_filter_anisotropic) {
+#ifndef HAVE_GLES
+	if(GLEW_EXT_texture_filter_anisotropic) 
+#endif
+	{
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maximumAnisotropy);
 		CHECK_GL;
 	}
@@ -200,11 +228,13 @@ void OpenGLRenderer::reinit() {
 void OpenGLRenderer::shutdown() {
 	
 	arx_assert(initialized);
-	
+
+#ifndef HAVE_GLES
 	if(shader) {
 		glDeleteObjectARB(shader);
 		CHECK_GL;
 	}
+#endif
 	
 	for(size_t i = 0; i < m_TextureStages.size(); ++i) {
 		delete m_TextureStages[i];
@@ -233,9 +263,11 @@ void OpenGLRenderer::enableTransform() {
 		return;
 	}
 	
+#ifndef HAVE_GLES
 	if(shader) {
 		glUseProgram(0);
 	}
+#endif
 	
 	glMatrixMode(GL_MODELVIEW);
 	glLoadMatrixf(&view._11);
@@ -257,9 +289,12 @@ void OpenGLRenderer::disableTransform() {
 	// D3D doesn't apply any transform for D3DTLVERTEX
 	// but we still need to change from D3D to OpenGL coordinates
 	
+#ifndef HAVE_GLES
 	if(shader) {
 		glUseProgram(shader);
-	} else {
+	} else 
+#endif
+	{
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 	}
@@ -556,38 +591,49 @@ void OpenGLRenderer::SetDepthBias(int depthBias) {
 	
 	CHECK_GL;
 }
-
+#ifndef HAVE_GLES
 static const GLenum arxToGlFillMode[] = {
 	GL_POINT, // FillPoint,
 	GL_LINE,  // FillWireframe,
 	GL_FILL,  // FillSolid
 };
-
+#endif
 void OpenGLRenderer::SetFillMode(FillMode mode) {
+#ifndef HAVE_GLES
 	glPolygonMode(GL_FRONT_AND_BACK, arxToGlFillMode[mode]);
 	CHECK_GL;
+#endif
 }
 
 VertexBuffer<TexturedVertex> * OpenGLRenderer::createVertexBufferTL(size_t capacity, BufferUsage usage) {
+#ifndef HAVE_GLES
 	if(useVBOs && shader) {
 		return new GLVertexBuffer<TexturedVertex>(this, capacity, usage); 
-	} else {
+	} else 
+#endif
+	{
 		return new GLNoVertexBuffer<TexturedVertex>(this, capacity); 
 	}
 }
 
 VertexBuffer<SMY_VERTEX> * OpenGLRenderer::createVertexBuffer(size_t capacity, BufferUsage usage) {
+#ifndef HAVE_GLES
 	if(useVBOs) {
 		return new GLVertexBuffer<SMY_VERTEX>(this, capacity, usage);
-	} else {
+	} else 
+#endif
+	{
 		return new GLNoVertexBuffer<SMY_VERTEX>(this, capacity);
 	}
 }
 
 VertexBuffer<SMY_VERTEX3> * OpenGLRenderer::createVertexBuffer3(size_t capacity, BufferUsage usage) {
+#ifndef HAVE_GLES
 	if(useVBOs) {
 		return new GLVertexBuffer<SMY_VERTEX3>(this, capacity, usage);
-	} else {
+	} else 
+#endif
+	{
 		return new GLNoVertexBuffer<SMY_VERTEX3>(this, capacity);
 	}
 }
@@ -603,7 +649,20 @@ const GLenum arxToGlPrimitiveType[] = {
 void OpenGLRenderer::drawIndexed(Primitive primitive, const TexturedVertex * vertices, size_t nvertices, unsigned short * indices, size_t nindices) {
 	
 	beforeDraw<TexturedVertex>();
-	
+#ifdef HAVE_GLES
+	// No shader here
+	if (nindices<=0)
+		return;
+		
+	glBeginVertex(vertices[indices[0]]);
+		
+	for(size_t i = 0; i < nindices; i++) {
+		renderVertex(vertices[indices[i]]);
+	}
+		
+	glEndVertex(arxToGlPrimitiveType[primitive]);
+
+#else
 	if(useVertexArrays && shader) {
 		
 		glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
@@ -623,7 +682,7 @@ void OpenGLRenderer::drawIndexed(Primitive primitive, const TexturedVertex * ver
 		glEnd();
 		
 	}
-	
+#endif
 	CHECK_GL;
 }
 

@@ -22,6 +22,19 @@
 #include "graphics/opengl/GLTexture2D.h"
 #include "graphics/opengl/OpenGLRenderer.h"
 
+#ifdef HAVE_GLES
+#define GL_SOURCE0_RGB		GL_SRC0_RGB
+#define GL_SOURCE1_RGB		GL_SRC1_RGB
+#define GL_SOURCE2_RGB		GL_SRC2_RGB
+#define GL_SOURCE3_RGB		GL_SRC3_RGB
+#define GL_SOURCE0_ALPHA	GL_SRC0_ALPHA
+#define GL_SOURCE1_ALPHA	GL_SRC1_ALPHA
+#define GL_SOURCE2_ALPHA	GL_SRC2_ALPHA
+#define GL_SOURCE3_ALPHA	GL_SRC3_ALPHA
+
+#define GL_NONE				0
+#endif
+
 GLTextureStage::GLTextureStage(OpenGLRenderer * _renderer, unsigned stage) : TextureStage(stage), renderer(_renderer), tex(NULL), current(NULL) {
 	
 	// Set default state
@@ -270,8 +283,10 @@ void GLTextureStage::setMipFilter(FilterMode filterMode) {
 	mipFilter = filterMode;
 }
 
-void GLTextureStage::setMipMapLODBias(float bias) {
-	
+void GLTextureStage::SetMipMapLODBias(float bias) {
+#ifdef HAVE_GLES
+//*TODO*
+#else
 	if(mStage != 0) {
 		glActiveTexture(GL_TEXTURE0 + mStage);
 	}
@@ -283,6 +298,7 @@ void GLTextureStage::setMipMapLODBias(float bias) {
 	}
 
 	CHECK_GL;
+#endif
 }
 
 void GLTextureStage::apply() {

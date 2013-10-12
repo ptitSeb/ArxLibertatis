@@ -32,6 +32,9 @@
 #include "io/log/Logger.h"
 #include "math/Rectangle.h"
 #include "platform/CrashHandler.h"
+#ifdef HAVE_GLES
+#include "eglport.h"
+#endif
 
 SDLWindow * SDLWindow::mainWindow = NULL;
 
@@ -75,8 +78,12 @@ bool SDLWindow::initializeFramework() {
 	desktopMode.resolution.x = vid->current_w;
 	desktopMode.resolution.y = vid->current_h;
 	desktopMode.depth = vid->vfmt->BitsPerPixel;
-	
+
+#ifdef HAVE_GLES
+	u32 flags = SDL_FULLSCREEN;
+#else	
 	u32 flags = SDL_FULLSCREEN | SDL_ANYFORMAT | SDL_OPENGL | SDL_HWSURFACE;
+#endif
 	SDL_Rect ** modes = SDL_ListModes(NULL, flags);
 	if(modes == (SDL_Rect **)(-1)) {
 		
@@ -109,6 +116,9 @@ bool SDLWindow::initializeFramework() {
 		ADD_MODE(1280, 800) // WXGA
 		ADD_MODE(1440, 900) // WXGA+
 		ADD_MODE(1920, 1200) // WUXGA
+#ifdef PANDORA
+		ADD_MODE(800, 480)	// PANDORA
+#endif
 		
 #undef ADD_MODE
 		
@@ -143,17 +153,17 @@ bool SDLWindow::initialize(const std::string & title, Vec2i size, bool fullscree
 	SDL_EventState(SDL_VIDEORESIZE, SDL_ENABLE);
 	SDL_EventState(SDL_VIDEOEXPOSE, SDL_ENABLE);
 	SDL_EventState(SDL_USEREVENT, SDL_IGNORE);
-	
+#ifndef HAVE_GLES
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 
 	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, config.video.vsync ? 1 : 0);
-	
+#endif
 	size_ = Vec2i::ZERO;
 	depth_ = 0;
 	
 	for(int msaa = config.video.antialiasing ? 8 : 1; msaa >= 0; msaa--) {
-		
+#ifndef HAVE_GLES		
 		if(msaa > 1) {
 			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, msaa);
@@ -164,12 +174,14 @@ bool SDLWindow::initialize(const std::string & title, Vec2i size, bool fullscree
 			LogError << "Failed to initialize SDL Window: " << SDL_GetError();
 			return false;
 		}
-		
+#endif
 		if(setMode(DisplayMode(size, fullscreen ? depth : 0), fullscreen)) {
 			break;
 		}
 	}
-	
+#ifdef HAVE_GLES
+	EGL_Open(size.x, size.y);
+#endif
 	isFullscreen_ = fullscreen;
 	
 	SDL_WM_SetCaption(title.c_str(), title.c_str());
@@ -217,7 +229,11 @@ bool SDLWindow::setMode(DisplayMode mode, bool fullscreen) {
 		}
 	}
 	
+#ifdef HAVE_GLES
+	Uint32 flags = 0;
+#else
 	Uint32 flags = SDL_ANYFORMAT | SDL_OPENGL | SDL_HWSURFACE;
+#endif
 	flags |= (fullscreen) ? SDL_FULLSCREEN : SDL_RESIZABLE;
 	SDL_Surface * win = SDL_SetVideoMode(mode.resolution.x, mode.resolution.y,
 	                                     mode.depth, flags);

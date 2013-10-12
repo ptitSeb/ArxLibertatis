@@ -44,6 +44,11 @@ option(USE_NATIVE_FS "Use the native filesystem backend directly instead of boos
 option(USE_QT5 "Use Qt 5 if available" ON)
 option(USE_QT4 "Use Qt 4 if available" ON)
 
+# OpenPandora
+option(PANDORA "Set to ON if targeting an OpenPandora device" ${PANDORA})
+option(GLES "Set to ON to build GLES renderer instead of OpenGL" ${GLES})
+
+
 # Build types
 option(UNITY_BUILD "Unity build" OFF)
 option(DEBUG_EXTRA "Expensive debug options" OFF)
@@ -255,11 +260,14 @@ list(APPEND ARX_LIBRARIES ${ZLIB_LIBRARIES})
 
 # OpenGL
 if(USE_OPENGL)
-	find_package(OpenGL ${OPTIONAL_DEPENDENCY})
-	find_package(GLEW ${OPTIONAL_DEPENDENCY})
-	if(NOT MSVC AND OPENGL_FOUND AND GLEW_FOUND)
-		check_link_library(OpenGL OPENGL_gl_LIBRARY)
-		check_link_library(GLEW GLEW_LIBRARIES)
+	if(GLES)
+	else()
+		find_package(OpenGL ${OPTIONAL_DEPENDENCY})
+		find_package(GLEW ${OPTIONAL_DEPENDENCY})
+		if(NOT MSVC AND OPENGL_FOUND AND GLEW_FOUND)
+			check_link_library(OpenGL OPENGL_gl_LIBRARY)
+			check_link_library(GLEW GLEW_LIBRARIES)
+		endif()
 	endif()
 endif()
 
@@ -752,7 +760,17 @@ set(WINDOW_SOURCES
 	src/window/RenderWindow.cpp
 	src/window/Window.cpp
 )
+<<<<<<< HEAD
 set(WINDOW_SDL_SOURCES src/window/SDLWindow.cpp)
+=======
+if(GLES)
+	set(WINDOW_SDL_SOURCES src/window/SDLWindow.cpp src/window/eglport.cpp)
+else()
+	set(WINDOW_SDL_SOURCES src/window/SDLWindow.cpp)
+endif()
+set(WINDOW_WIN32_SOURCES src/window/Win32Window.cpp)
+set(WINDOW_D3D9_SOURCES src/window/D3D9Window.cpp)
+>>>>>>> Now it compile with GLEs, but doesn't work yet (and is messy)
 
 # TODO manually specify theese like we do for the tools
 file(GLOB_RECURSE ALL_INCLUDES RELATIVE ${CMAKE_SOURCE_DIR} ${SRC_DIR}/*.h)
@@ -775,12 +793,40 @@ if(USE_OPENAL AND OPENAL_FOUND)
 endif()
 
 # Graphics
+<<<<<<< HEAD
 if(USE_OPENGL AND OPENGL_FOUND AND GLEW_FOUND)
 	list(APPEND GRAPHICS_SOURCES ${GRAPHICS_OPENGL_SOURCES})
 	list(APPEND ARX_LIBRARIES ${GLEW_LIBRARIES} ${OPENGL_gl_LIBRARY})
 	include_directories(SYSTEM ${OPENGL_INCLUDE_DIR} ${GLEW_INCLUDE_DIR})
 	add_definitions(${GLEW_DEFINITIONS})
 	set(ARX_HAVE_OPENGL 1)
+=======
+if(USE_D3D9 AND DIRECTX_FOUND)
+	list(APPEND GRAPHICS_SOURCES ${GRAPHICS_D3D9_SOURCES})
+	list(APPEND WINDOW_SOURCES ${WINDOW_WIN32_SOURCES} ${WINDOW_D3D9_SOURCES})
+	list(APPEND ARX_LIBRARIES ${DIRECTX_D3D9_LIBRARY} ${DIRECTX_D3DX9_LIBRARY} ${DIRECTX_D3DCOMPILER_LIBRARY} ${DIRECTX_DXERR9_LIBRARY})
+	include_directories(SYSTEM ${DIRECTX_INCLUDE_DIR})
+	set(ARX_HAVE_D3D9 1)
+endif()
+if(GLES)
+		list(APPEND GRAPHICS_SOURCES ${GRAPHICS_OPENGL_SOURCES})
+		list(APPEND ARX_LIBRARIES GLES_CM  EGL )
+		include_directories(SYSTEM /mnt/utmp/codeblocks/usr/include/GLES )
+		set(ARX_HAVE_OPENGL 1)
+		add_definitions(-DHAVE_GLES)
+else()
+	if(USE_OPENGL AND OPENGL_FOUND AND GLEW_FOUND)
+		list(APPEND GRAPHICS_SOURCES ${GRAPHICS_OPENGL_SOURCES})
+		list(APPEND ARX_LIBRARIES ${GLEW_LIBRARIES} ${OPENGL_gl_LIBRARY})
+		include_directories(SYSTEM ${OPENGL_INCLUDE_DIR} ${GLEW_INCLUDE_DIR})
+		add_definitions(${GLEW_DEFINITIONS})
+		set(ARX_HAVE_OPENGL 1)
+	endif()
+endif()
+
+if(PANDORA)
+	add_definitions(-DPANDORA)
+>>>>>>> Now it compile with GLEs, but doesn't work yet (and is messy)
 endif()
 
 # Windowing / input

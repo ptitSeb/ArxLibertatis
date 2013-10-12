@@ -23,6 +23,10 @@
 #include "graphics/opengl/GLTextureStage.h"
 #include "graphics/opengl/OpenGLRenderer.h"
 
+#ifdef HAVE_GLES
+#define GL_NONE		0
+#endif
+
 GLTexture2D::GLTexture2D(OpenGLRenderer * _renderer) : renderer(_renderer), tex(GL_NONE) { }
 GLTexture2D::~GLTexture2D() {
 	Destroy();
@@ -39,10 +43,12 @@ bool GLTexture2D::Create() {
 	mipFilter = TextureStage::FilterLinear;
 	minFilter = TextureStage::FilterNearest;
 	magFilter = TextureStage::FilterLinear;
-
+#ifndef HAVE_GLES
 	if(GLEW_ARB_texture_non_power_of_two) {
 		storedSize = size;
-	} else {
+	} else 
+#endif
+	{
 		storedSize = Vec2i(GetNextPowerOf2(size.x), GetNextPowerOf2(size.y));
 	}
 	
@@ -57,6 +63,14 @@ void GLTexture2D::Upload() {
 	
 	glBindTexture(GL_TEXTURE_2D, tex);
 	renderer->GetTextureStage(0)->current = this;
+#ifdef HAVE_GLES
+#define GL_LUMINANCE8			GL_LUMINANCE
+#define GL_ALPHA8				GL_ALPHA
+#define GL_LUMINANCE8_ALPHA8	GL_LUMINANCE_ALPHA
+#define GL_RGB8					GL_RGB
+#define	GL_BGR					GL_RGB
+#define GL_RGBA8				GL_RGBA
+#endif
 	
 	GLint internal;
 	GLenum format;
@@ -70,10 +84,28 @@ void GLTexture2D::Upload() {
 		internal = GL_RGB8, format = GL_RGB;
 	} else if(mFormat == Image::Format_B8G8R8) {
 		internal = GL_RGB8, format = GL_BGR;
+#ifdef HAVE_GLES
+		unsigned char *p = mImage.GetData();
+		for (int i=0; i<size.x*size.y*3; i+=3) {
+			unsigned char tmp = p[i];
+			p[i]=p[i+2];
+			p[i+2]=tmp;
+		}
+#endif
 	} else if(mFormat == Image::Format_R8G8B8A8) {
 		internal = GL_RGBA8, format = GL_RGBA;
 	} else if(mFormat == Image::Format_B8G8R8A8) {
+#ifdef HAVE_GLES
+		unsigned char *p = mImage.GetData();
+		for (int i=0; i<size.x*size.y*3; i+=4) {
+			unsigned char tmp = p[i];
+			p[i]=p[i+2];
+			p[i+2]=tmp;
+		}
+		internal = GL_RGBA8, format = GL_RGBA;
+#else
 		internal = GL_RGBA8, format = GL_BGRA;
+#endif
 	} else {
 		arx_assert_msg(false, "Unsupported image format");
 		return;
@@ -116,6 +148,9 @@ void GLTexture2D::Destroy() {
 		}
 	}
 }
+#ifdef HAVE_GLES
+#define GL_MIRRORED_REPEAT			GL_MIRRORED_REPEAT_OES
+#endif
 
 static const GLint arxToGlWrapMode[] = {
 	GL_REPEAT, // WrapRepeat,

@@ -22,7 +22,12 @@
 
 #include "platform/Platform.h"
 
+#ifdef HAVE_GLES
+#include <GLES/gl.h>
+#include <GLES/glext.h>
+#else
 #include <GL/glew.h>
+#endif
 
 #include <io/log/Logger.h>
 
