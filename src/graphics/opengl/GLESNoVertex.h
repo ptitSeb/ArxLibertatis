@@ -26,7 +26,9 @@
 #include "graphics/opengl/OpenGLRenderer.h"
 #include "graphics/opengl/OpenGLUtil.h"
 
-#define MAX_IDX	1024
+#include <stdio.h>
+
+#define MAX_IDX	4096
 static GLfloat	tex0[MAX_IDX*2];
 static GLfloat	tex1[MAX_IDX*2];
 static GLfloat	tex2[MAX_IDX*2];
@@ -42,7 +44,6 @@ static void renderVertex(const Vertex & vertex);
 
 template <>
 void renderVertex(const TexturedVertex & vertex) {
-	
 	Color c = Color::fromBGRA(vertex.color);
 	col0[idx*4+0]=c.r; col0[idx*4+1]=c.g; col0[idx*4+2]=c.b; col0[idx*4+3]=c.a;
 	
@@ -92,7 +93,7 @@ void glBeginVertex(const TexturedVertex & vertex) {
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(4, GL_FLOAT, 0, vtx0);
 	glEnableClientState(GL_COLOR_ARRAY);
-	glColorPointer(4, GL_FLOAT, 0, col0);
+	glColorPointer(4, GL_UNSIGNED_BYTE, 0, col0);
 	// only one texture
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	glTexCoordPointer(2, GL_FLOAT, 0, tex0);
@@ -107,7 +108,7 @@ void glBeginVertex(const SMY_VERTEX & vertex) {
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(4, GL_FLOAT, 0, vtx0);
 	glEnableClientState(GL_COLOR_ARRAY);
-	glColorPointer(4, GL_FLOAT, 0, col0);
+	glColorPointer(4, GL_UNSIGNED_BYTE, 0, col0);
 	// only 1 textures
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	glTexCoordPointer(2, GL_FLOAT, 0, tex0);
@@ -122,7 +123,7 @@ void glBeginVertex(const SMY_VERTEX3 & vertex) {
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(4, GL_FLOAT, 0, vtx0);
 	glEnableClientState(GL_COLOR_ARRAY);
-	glColorPointer(4, GL_FLOAT, 0, col0);
+	glColorPointer(4, GL_UNSIGNED_BYTE, 0, col0);
 	// 3 textures
 	glClientActiveTexture(GL_TEXTURE2);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);

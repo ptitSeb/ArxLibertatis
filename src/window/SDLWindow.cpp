@@ -231,6 +231,7 @@ bool SDLWindow::setMode(DisplayMode mode, bool fullscreen) {
 	
 #ifdef HAVE_GLES
 	Uint32 flags = 0;
+	fullscreen = true;
 #else
 	Uint32 flags = SDL_ANYFORMAT | SDL_OPENGL | SDL_HWSURFACE;
 #endif
@@ -439,7 +440,11 @@ Vec2i SDLWindow::getCursorPosition() const {
 }
 
 void SDLWindow::showFrame() {
+#ifdef HAVE_GLES
+	EGL_SwapBuffers();
+#else
 	SDL_GL_SwapBuffers();
+#endif
 }
 
 void SDLWindow::hide() {
