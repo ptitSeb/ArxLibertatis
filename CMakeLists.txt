@@ -761,15 +761,11 @@ set(WINDOW_SOURCES
 	src/window/Window.cpp
 )
 
-set(WINDOW_SDL_SOURCES src/window/SDLWindow.cpp)
-
 if(GLES)
 	set(WINDOW_SDL_SOURCES src/window/SDLWindow.cpp src/window/eglport.cpp)
 else()
 	set(WINDOW_SDL_SOURCES src/window/SDLWindow.cpp)
 endif()
-set(WINDOW_WIN32_SOURCES src/window/Win32Window.cpp)
-set(WINDOW_D3D9_SOURCES src/window/D3D9Window.cpp)
 
 # TODO manually specify theese like we do for the tools
 file(GLOB_RECURSE ALL_INCLUDES RELATIVE ${CMAKE_SOURCE_DIR} ${SRC_DIR}/*.h)
@@ -798,13 +794,6 @@ if(USE_OPENGL AND OPENGL_FOUND AND GLEW_FOUND)
 	include_directories(SYSTEM ${OPENGL_INCLUDE_DIR} ${GLEW_INCLUDE_DIR})
 	add_definitions(${GLEW_DEFINITIONS})
 	set(ARX_HAVE_OPENGL 1)
-endif()
-if(USE_D3D9 AND DIRECTX_FOUND)
-	list(APPEND GRAPHICS_SOURCES ${GRAPHICS_D3D9_SOURCES})
-	list(APPEND WINDOW_SOURCES ${WINDOW_WIN32_SOURCES} ${WINDOW_D3D9_SOURCES})
-	list(APPEND ARX_LIBRARIES ${DIRECTX_D3D9_LIBRARY} ${DIRECTX_D3DX9_LIBRARY} ${DIRECTX_D3DCOMPILER_LIBRARY} ${DIRECTX_DXERR9_LIBRARY})
-	include_directories(SYSTEM ${DIRECTX_INCLUDE_DIR})
-	set(ARX_HAVE_D3D9 1)
 endif()
 if(GLES)
 		list(APPEND GRAPHICS_SOURCES ${GRAPHICS_OPENGL_SOURCES})
