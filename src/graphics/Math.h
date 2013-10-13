@@ -77,9 +77,15 @@ inline Vec3f randomVec(float min = 0.f, float max = 1.f) {
 }
 
 //Approximative Methods
+#ifdef HAVE_GLES
+#define EEcos(val)  (float)cosf((float)val)
+#define EEsin(val)  (float)sinf((float)val)
+#define EEfabs(val) (float)fabsf(val)
+#else
 #define EEcos(val)  (float)cos((float)val)
 #define EEsin(val)  (float)sin((float)val)
 #define EEfabs(val) (float)fabs(val)
+#endif
 
 inline bool In3DBBoxTolerance(const Vec3f * pos, const EERIE_3D_BBOX * bbox, const float tolerance) {
 	return ((pos->x >= bbox->min.x - tolerance)
@@ -125,6 +131,7 @@ inline T reinterpret(O v) {
 }
 
 inline float ffsqrt(float f) {
+/*SEB* *TODO* Neon inline version */
 	return reinterpret<f32, u32>(((reinterpret<u32, f32>(f) - 0x3f800000) >> 1) + 0x3f800000);
 }
 
@@ -136,6 +143,7 @@ inline float ffsqrt(float f) {
  * @return The square root of \a fValue, as a float.
  */
 inline float FastRSqrt(float value) {
+/*SEB* *TODO* Neon inline version */
 	
 	s32 intval = reinterpret<s32, f32>(value);
 	
