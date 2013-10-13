@@ -92,6 +92,12 @@ public:
 	bool ToNormalMap();
 
 	void ResizeFrom(const Image &source, unsigned int width, unsigned int height, bool flip_vertical = false);
+	
+	// Downscale (i.e /2 both with and height)
+	bool DownScale();
+	
+	// RemoveAlpha
+	bool RemoveAlpha();
 
 	/// Set the alpha of pixels matching the color key to 0. Will add an alpha channel if needed.
 	void ApplyColorKeyToAlpha(Color colorKey = Color::black);

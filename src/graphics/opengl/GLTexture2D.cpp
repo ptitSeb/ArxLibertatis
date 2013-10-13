@@ -24,6 +24,7 @@
 #include "graphics/opengl/OpenGLRenderer.h"
 
 #ifdef HAVE_GLES
+#include <stdio.h>
 #define GL_NONE		0
 #endif
 
@@ -83,25 +84,33 @@ void GLTexture2D::Upload() {
 	} else if(mFormat == Image::Format_R8G8B8) {
 		internal = GL_RGB8, format = GL_RGB;
 	} else if(mFormat == Image::Format_B8G8R8) {
-		internal = GL_RGB8, format = GL_BGR;
 #ifdef HAVE_GLES
+	/*
 		unsigned char *p = mImage.GetData();
 		for (int i=0; i<size.x*size.y*3; i+=3) {
 			unsigned char tmp = p[i];
 			p[i]=p[i+2];
 			p[i+2]=tmp;
 		}
+	*/
+		mImage.ConvertTo(Image::Format_R8G8B8);
+		internal = GL_RGB8, format = GL_RGB;
+#else
+		internal = GL_RGB8, format = GL_BGR;
 #endif
 	} else if(mFormat == Image::Format_R8G8B8A8) {
 		internal = GL_RGBA8, format = GL_RGBA;
 	} else if(mFormat == Image::Format_B8G8R8A8) {
 #ifdef HAVE_GLES
+	/*
 		unsigned char *p = mImage.GetData();
 		for (int i=0; i<size.x*size.y*3; i+=4) {
 			unsigned char tmp = p[i];
 			p[i]=p[i+2];
 			p[i+2]=tmp;
 		}
+	*/
+		mImage.ConvertTo(Image::Format_R8G8B8A8);
 		internal = GL_RGBA8, format = GL_RGBA;
 #else
 		internal = GL_RGBA8, format = GL_BGRA;
@@ -110,11 +119,27 @@ void GLTexture2D::Upload() {
 		arx_assert_msg(false, "Unsupported image format");
 		return;
 	}
+
+#ifdef HAVE_GLES
+	if(hasMipmaps() && (size.x>32) && (size.y>32)) 
+	{
+		// downscale this texture !
+		if (mImage.DownScale()) {
+			size.x = mImage.GetWidth();
+			size.y = mImage.GetHeight();
+			storedSize = Vec2i(GetNextPowerOf2(size.x), GetNextPowerOf2(size.y));
+		}
+		
+	}
+
+#endif
 	
-	if(hasMipmaps()) {
+#ifndef HAVE_GLES
+	if(hasMipmaps()) 
+#endif
+	{
 		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 	}
-	
 	// TODO handle GL_MAX_TEXTURE_SIZE
 	
 	if(storedSize != size) {

@@ -298,6 +298,70 @@ bool Image::ConvertTo(Image::Format format) {
 	return true;
 }
 
+bool Image::DownScale() {
+	arx_assert_msg( !IsCompressed(), "[Image::DownScale] DownScaling of compressed images not supported yet!" );
+	arx_assert_msg( !IsVolume(), "[Image::DownScale] DownScaling of volume images not supported yet!" );
+	arx_assert_msg( GetWidth() > 16, "[Image::DownScale] DownScaling of small images not supported" );
+	arx_assert_msg( GetHeight() > 16, "[Image::DownScale] DownScaling of small images not supported" );
+	if(IsCompressed() || IsVolume() || (GetWidth() < 17) || (GetHeight() < 17))
+		return false;
+
+	unsigned char *p, *s;
+	unsigned int hWidth=mWidth/2;
+	unsigned int hHeight=mHeight/2;
+	unsigned int nChan = GetNumChannels();
+	unsigned int dataSize = Image::GetSizeWithMipmaps(mFormat, hWidth, hHeight, mDepth, mNumMipmaps);
+	
+	p = new unsigned char[dataSize];
+	s = GetData();
+	unsigned int aa;
+	for (unsigned int y=0; y<hHeight; y++)
+		for (unsigned int x=0; x<hWidth; x++)
+			for (unsigned int a=0; a<nChan; a++) {
+				aa = s[(y*2*mWidth+x*2)*nChan+a]+s[((y*2+1)*mWidth+x*2)*nChan+a]+s[((y*2)*mWidth+(x*2+1))*nChan+a]+s[((y*2+1)*mWidth+(x*2+1))*nChan+a];
+				p[(y*hWidth+x)*nChan+a] = aa/4;
+	}
+	
+	Create(hWidth, hHeight, mFormat, mDepth, mNumMipmaps);
+	
+	memcpy(GetData(), p, dataSize);
+	
+	delete[] p;
+		
+	return true;
+}
+
+bool Image::RemoveAlpha() {
+	arx_assert_msg( !IsCompressed(), "[Image::RemoveAlpha] Removeing Alpha of compressed images not supported yet!" );
+	arx_assert_msg( !IsVolume(), "[Image::RemoveAlpha] Removing Alpha of volume images not supported yet!" );
+	if(IsCompressed() || IsVolume() || !HasAlpha())
+		return false;
+
+	unsigned char *p, *s;
+	unsigned int mChan = GetNumChannels();
+	unsigned int nChan = mChan - 1;
+	Image::Format nFormat = (mFormat==Format_L8A8)?Format_L8:(mFormat==Format_R8G8B8A8)?Format_R8G8B8:Format_B8G8R8;
+
+	unsigned int dataSize = Image::GetSizeWithMipmaps(nFormat, mWidth, mHeight, mDepth, mNumMipmaps);
+	
+	p = new unsigned char[dataSize];
+	s = GetData();
+	unsigned int aa;
+	for (unsigned int y=0; y<mHeight; y++)
+		for (unsigned int x=0; x<mWidth; x++)
+			for (unsigned int a=0; a<nChan; a++) {
+				p[(y*mWidth+x)*nChan+a] = s[(y*mWidth+x)*mChan+a];
+	}
+	
+	Create(mWidth, mHeight, nFormat, mDepth, mNumMipmaps);
+	
+	memcpy(GetData(), p, dataSize);
+	
+	delete[] p;
+		
+	return true;
+}
+
 // creates an image of the desired size and rescales the source into it
 // performs only nearest-neighbour interpolation of the image
 // supports only RGB format

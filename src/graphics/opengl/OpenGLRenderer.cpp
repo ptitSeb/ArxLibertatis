@@ -689,10 +689,18 @@ void OpenGLRenderer::drawIndexed(Primitive primitive, const TexturedVertex * ver
 bool OpenGLRenderer::getSnapshot(Image & image) {
 	
 	Vec2i size = mainApp->getWindow()->getSize();
+
+#ifdef HAVE_GLES
+	image.Create(size.x, size.y, Image::Format_R8G8B8A8);
 	
+	glReadPixels(0, 0, size.x, size.y, GL_RGBA, GL_UNSIGNED_BYTE, image.GetData()); 
+	
+	image.RemoveAlpha();
+#else
 	image.Create(size.x, size.y, Image::Format_R8G8B8);
 	
 	glReadPixels(0, 0, size.x, size.y, GL_RGB, GL_UNSIGNED_BYTE, image.GetData()); 
+#endif
 	
 	image.FlipY();
 	
@@ -708,8 +716,14 @@ bool OpenGLRenderer::getSnapshot(Image & image, size_t width, size_t height) {
 	// duplication to ensure use of Image::Format_R8G8B8
 	Image fullsize;
 	Vec2i size = mainApp->getWindow()->getSize();
+#ifdef HAVE_GLES
+	fullsize.Create(size.x, size.y, Image::Format_R8G8B8A8);
+	glReadPixels(0, 0, size.x, size.y, GL_RGBA, GL_UNSIGNED_BYTE, fullsize.GetData()); 
+	fullsize.RemoveAlpha();
+#else
 	fullsize.Create(size.x, size.y, Image::Format_R8G8B8);
 	glReadPixels(0, 0, size.x, size.y, GL_RGB, GL_UNSIGNED_BYTE, fullsize.GetData()); 
+#endif
 
 	image.ResizeFrom(fullsize, width, height, true);
 
