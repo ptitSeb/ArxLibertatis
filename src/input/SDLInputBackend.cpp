@@ -462,6 +462,24 @@ void SDLInputBackend::onInputEvent(const SDL_Event & event) {
 		case SDL_KEYDOWN:
 		case SDL_KEYUP: {
 			SDLKey key = event.key.keysym.sym;
+#ifdef PANDORA
+			// right shoulder (right shift) = left click, left shoulder (right control) = right click
+			if (key==SDLK_RCTRL) {
+				size_t i = sdlToArxButton[SDL_BUTTON_RIGHT] - Mouse::ButtonBase;
+				if((event.type == SDL_KEYDOWN)) {
+					buttonStates[i] = true, clickCount[i]++;
+				} else {
+					buttonStates[i] = false, unclickCount[i]++;
+				}
+			} else if (key==SDLK_RSHIFT) {
+				size_t i = sdlToArxButton[SDL_BUTTON_LEFT] - Mouse::ButtonBase;
+				if((event.type == SDL_KEYDOWN)) {
+					buttonStates[i] = true, clickCount[i]++;
+				} else {
+					buttonStates[i] = false, unclickCount[i]++;
+				}
+			} else
+#endif
 			if(key >= 0 && size_t(key) < ARRAY_SIZE(sdlToArxKey) && sdlToArxKey[key] >= 0) {
 				keyStates[sdlToArxKey[key] - Keyboard::KeyBase] = (event.key.state == SDL_PRESSED);
 			} else {

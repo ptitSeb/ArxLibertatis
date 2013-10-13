@@ -43,9 +43,13 @@ namespace {
 
 /* Default values for config */
 namespace Default {
-
+#ifdef PANDORA
+#define ARX_DEFAULT_WIDTH 800
+#define ARX_DEFAULT_HEIGHT 480
+#else
 #define ARX_DEFAULT_WIDTH 640
 #define ARX_DEFAULT_HEIGHT 480
+#endif
 
 const string
 	language = string(),
@@ -59,7 +63,11 @@ const string
 
 const int
 	bpp = 16,
+#ifdef PANDORA
+	levelOfDetail = 0,
+#else
 	levelOfDetail = 2,
+#endif
 	fogDistance = 10,
 	volume = 10,
 	sfxVolume = 10,
@@ -73,8 +81,13 @@ const bool
 	first_run = true,
 	fullscreen = true,
 	showCrosshair = true,
+#ifdef PANDORA
+	antialiasing = false,
+	vsync = false,
+#else
 	antialiasing = true,
 	vsync = true,
+#endif
 	eax = false,
 	invertMouse = false,
 	autoReadyWeapon = false,
@@ -85,12 +98,22 @@ const bool
 
 ActionKey actions[NUM_ACTION_KEY] = {
 	ActionKey(Keyboard::Key_Spacebar), // JUMP
+#ifdef PANDORA
+	ActionKey(Keyboard::Key_LeftCtrl), // MAGICMODE
+	ActionKey(Keyboard::Key_LeftShift), // STEALTHMODE
+#else
 	ActionKey(Keyboard::Key_LeftCtrl, Keyboard::Key_RightCtrl), // MAGICMODE
 	ActionKey(Keyboard::Key_LeftShift, Keyboard::Key_RightShift), // STEALTHMODE
+#endif
 	ActionKey(Keyboard::Key_W, Keyboard::Key_UpArrow), // WALKFORWARD
 	ActionKey(Keyboard::Key_S, Keyboard::Key_DownArrow), // WALKBACKWARD
+#ifdef PANDORA
+	ActionKey(Keyboard::Key_LeftArrow), // STRAFELEFT
+	ActionKey(Keyboard::Key_RightArrow), // STRAFERIGHT
+#else
 	ActionKey(Keyboard::Key_A), // STRAFELEFT
 	ActionKey(Keyboard::Key_D), // STRAFERIGHT
+#endif
 	ActionKey(Keyboard::Key_Q), // LEANLEFT
 	ActionKey(Keyboard::Key_E), // LEANRIGHT
 	ActionKey(Keyboard::Key_X), // CROUCH
@@ -111,8 +134,13 @@ ActionKey actions[NUM_ACTION_KEY] = {
 	ActionKey(Keyboard::Key_Tab, Keyboard::Key_NumPad0), // WEAPON
 	ActionKey(Keyboard::Key_F9), // QUICKLOAD
 	ActionKey(Keyboard::Key_F5), // QUICKSAVE
+#ifdef PANDORA
+	ActionKey(Keyboard::Key_A), // TURNLEFT
+	ActionKey(Keyboard::Key_D), // TURNRIGHT
+#else
 	ActionKey(Keyboard::Key_LeftArrow), // TURNLEFT
 	ActionKey(Keyboard::Key_RightArrow), // TURNRIGHT
+#endif
 	ActionKey(Keyboard::Key_PageUp), // LOOKUP
 	ActionKey(Keyboard::Key_PageDown), // LOOKDOWN
 	ActionKey(Keyboard::Key_LeftAlt), // STRAFE
