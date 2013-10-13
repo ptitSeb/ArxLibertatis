@@ -760,9 +760,9 @@ set(WINDOW_SOURCES
 	src/window/RenderWindow.cpp
 	src/window/Window.cpp
 )
-<<<<<<< HEAD
+
 set(WINDOW_SDL_SOURCES src/window/SDLWindow.cpp)
-=======
+
 if(GLES)
 	set(WINDOW_SDL_SOURCES src/window/SDLWindow.cpp src/window/eglport.cpp)
 else()
@@ -770,7 +770,6 @@ else()
 endif()
 set(WINDOW_WIN32_SOURCES src/window/Win32Window.cpp)
 set(WINDOW_D3D9_SOURCES src/window/D3D9Window.cpp)
->>>>>>> Now it compile with GLEs, but doesn't work yet (and is messy)
 
 # TODO manually specify theese like we do for the tools
 file(GLOB_RECURSE ALL_INCLUDES RELATIVE ${CMAKE_SOURCE_DIR} ${SRC_DIR}/*.h)
@@ -793,14 +792,13 @@ if(USE_OPENAL AND OPENAL_FOUND)
 endif()
 
 # Graphics
-<<<<<<< HEAD
 if(USE_OPENGL AND OPENGL_FOUND AND GLEW_FOUND)
 	list(APPEND GRAPHICS_SOURCES ${GRAPHICS_OPENGL_SOURCES})
 	list(APPEND ARX_LIBRARIES ${GLEW_LIBRARIES} ${OPENGL_gl_LIBRARY})
 	include_directories(SYSTEM ${OPENGL_INCLUDE_DIR} ${GLEW_INCLUDE_DIR})
 	add_definitions(${GLEW_DEFINITIONS})
 	set(ARX_HAVE_OPENGL 1)
-=======
+endif()
 if(USE_D3D9 AND DIRECTX_FOUND)
 	list(APPEND GRAPHICS_SOURCES ${GRAPHICS_D3D9_SOURCES})
 	list(APPEND WINDOW_SOURCES ${WINDOW_WIN32_SOURCES} ${WINDOW_D3D9_SOURCES})
@@ -826,7 +824,6 @@ endif()
 
 if(PANDORA)
 	add_definitions(-DPANDORA)
->>>>>>> Now it compile with GLEs, but doesn't work yet (and is messy)
 endif()
 
 # Windowing / input
