@@ -157,10 +157,10 @@ void EGL_SwapBuffers( void )
 
     if (eglSettings[CFG_FPS] != 0) {
         fpsCount++;
-
-        if (fpsTime - Platform_GetTicks() >= 1000)
+		
+        if (Platform_GetTicks() - fpsTime >= 1000<<3)	// print fps every 8 seconds
         {
-            printf( "EGLport: %d fps\n", fpsCount );
+            printf( "EGLport: %d fps\n", fpsCount>>3 );
             fpsTime = Platform_GetTicks();
             fpsCount = 0;
         }
@@ -301,6 +301,10 @@ int8_t EGL_Open( uint16_t width, uint16_t height )
 
     printf( "EGLport: Setting swap interval\n" );
     peglSwapInterval( eglDisplay, (eglSettings[CFG_VSYNC] > 0) ? 1 : 0 );
+	
+	#if defined(USE_EGL_SDL)
+	SDL_InitSubSystem(SDL_INIT_TIMER);
+	#endif
 
     printf( "EGLport: Complete\n" );
 
@@ -324,6 +328,7 @@ void OpenCfg ( const char* file )
 
     strncpy( eglStrings[CFG_MODE], "egl_mode=", MAX_STRING );
     strncpy( eglStrings[CFG_VSYNC], "use_vsync=", MAX_STRING );
+    strncpy( eglStrings[CFG_FPS], "use_fps=", MAX_STRING );
     strncpy( eglStrings[CFG_FSAA], "use_fsaa=", MAX_STRING );
     strncpy( eglStrings[CFG_RED_SIZE], "size_red=", MAX_STRING );
     strncpy( eglStrings[CFG_GREEN_SIZE], "size_green=", MAX_STRING );
