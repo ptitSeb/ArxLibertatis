@@ -651,16 +651,18 @@ void OpenGLRenderer::drawIndexed(Primitive primitive, const TexturedVertex * ver
 	beforeDraw<TexturedVertex>();
 #ifdef HAVE_GLES
 	// No shader here
-	if (nindices<=0)
+	if (nindices==0)
 		return;
 		
-	glBeginVertex(vertices[indices[0]]);
+	glBeginVertex(vertices);
 		
 	for(size_t i = 0; i < nindices; i++) {
-		renderVertex(vertices[indices[i]]);
+		renderVertex(vertices, indices[i]);
 	}
 		
-	glEndVertex(arxToGlPrimitiveType[primitive]);
+	glDrawElements(arxToGlPrimitiveType[primitive], nindices, GL_UNSIGNED_SHORT, indices);
+			
+	glEndVertex(arxToGlPrimitiveType[primitive], 0);
 
 #else
 	if(useVertexArrays && shader) {
