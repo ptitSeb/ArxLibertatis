@@ -85,14 +85,6 @@ void GLTexture2D::Upload() {
 		internal = GL_RGB8, format = GL_RGB;
 	} else if(mFormat == Image::Format_B8G8R8) {
 #ifdef HAVE_GLES
-	/*
-		unsigned char *p = mImage.GetData();
-		for (int i=0; i<size.x*size.y*3; i+=3) {
-			unsigned char tmp = p[i];
-			p[i]=p[i+2];
-			p[i+2]=tmp;
-		}
-	*/
 		mImage.ConvertTo(Image::Format_R8G8B8);
 		internal = GL_RGB8, format = GL_RGB;
 #else
@@ -102,14 +94,6 @@ void GLTexture2D::Upload() {
 		internal = GL_RGBA8, format = GL_RGBA;
 	} else if(mFormat == Image::Format_B8G8R8A8) {
 #ifdef HAVE_GLES
-	/*
-		unsigned char *p = mImage.GetData();
-		for (int i=0; i<size.x*size.y*3; i+=4) {
-			unsigned char tmp = p[i];
-			p[i]=p[i+2];
-			p[i+2]=tmp;
-		}
-	*/
 		mImage.ConvertTo(Image::Format_R8G8B8A8);
 		internal = GL_RGBA8, format = GL_RGBA;
 #else
@@ -121,7 +105,7 @@ void GLTexture2D::Upload() {
 	}
 
 #ifdef HAVE_GLES
-	if(hasMipmaps() && (size.x>32) && (size.y>32)) 
+	if(hasMipmaps() && ((size.x>32) || (size.y>32))) 
 	{
 		// downscale this texture !
 		if (mImage.DownScale()) {
@@ -134,14 +118,52 @@ void GLTexture2D::Upload() {
 
 #endif
 	
-#ifndef HAVE_GLES
 	if(hasMipmaps()) 
-#endif
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 	}
 	// TODO handle GL_MAX_TEXTURE_SIZE
-	
+#ifdef HAVE_GLES
+	// convert to 16 bits some textures
+	if (internal==GL_RGB8) {
+		// convert 24bits RGB to 16bits 565 RGB
+		unsigned char *temp = new unsigned char[mImage.GetWidth()*mImage.GetHeight()*2];
+		unsigned short *p = (unsigned short*)temp;
+		unsigned char *s = mImage.GetData();
+		for (int y=0; y<mImage.GetHeight(); y++)
+			for (int x=0; x<mImage.GetWidth(); x++) {
+				unsigned short r = s[0]>>3, g = s[1]>>2, b = s[2]>>3;
+				*(p++) = r<<11 | g<<5 | b;
+				s+=3;
+		}
+		if(storedSize != size) {
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, storedSize.x, storedSize.y, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, NULL);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, temp);
+		} else {
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, size.x, size.y, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, temp);
+		}
+		delete[] temp;
+	} else
+	if (internal==GL_RGBA8) {
+		// convert 32bits RGBA to 16bits 4444 RGBA
+		unsigned char *temp = new unsigned char[mImage.GetWidth()*mImage.GetHeight()*2];
+		unsigned short *p = (unsigned short*)temp;
+		unsigned char *s = mImage.GetData();
+		for (int y=0; y<mImage.GetHeight(); y++)
+			for (int x=0; x<mImage.GetWidth(); x++) {
+				unsigned short r = s[0]>>4, g = s[1]>>4, b = s[2]>>4, a = s[3]>>4;
+				*(p++) = r<<12 | g<<8 | b<<4 | a;
+				s+=4;
+		}
+		if(storedSize != size) {
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, storedSize.x, storedSize.y, 0, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, NULL);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, temp);
+		} else {
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, temp);
+		}
+		delete[] temp;
+	} else
+#endif
 	if(storedSize != size) {
 		glTexImage2D(GL_TEXTURE_2D, 0, internal, storedSize.x, storedSize.y, 0, format, GL_UNSIGNED_BYTE, NULL);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y, format, GL_UNSIGNED_BYTE, mImage.GetData());
