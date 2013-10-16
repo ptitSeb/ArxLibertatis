@@ -301,8 +301,8 @@ bool Image::ConvertTo(Image::Format format) {
 bool Image::DownScale() {
 	arx_assert_msg( !IsCompressed(), "[Image::DownScale] DownScaling of compressed images not supported yet!" );
 	arx_assert_msg( !IsVolume(), "[Image::DownScale] DownScaling of volume images not supported yet!" );
-	arx_assert_msg( GetWidth() > 16, "[Image::DownScale] DownScaling of small images not supported" );
-	arx_assert_msg( GetHeight() > 16, "[Image::DownScale] DownScaling of small images not supported" );
+//	arx_assert_msg( GetWidth() > 16, "[Image::DownScale] DownScaling of small images not supported" );
+//	arx_assert_msg( GetHeight() > 16, "[Image::DownScale] DownScaling of small images not supported" );
 	if(IsCompressed() || IsVolume() || (GetWidth() < 17) || (GetHeight() < 17))
 		return false;
 
