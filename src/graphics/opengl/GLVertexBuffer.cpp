@@ -17,6 +17,7 @@
 * along with Arx Libertatis.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef HAVE_GLES
 #include "graphics/opengl/GLVertexBuffer.h"
 
 static GLArrayClientState glArrayClientState = GL_NoArray;
@@ -53,3 +54,4 @@ bool switchVertexArray(GLArrayClientState type, const void * ref, int texcount) 
 
 	return true;
 }
+#endif

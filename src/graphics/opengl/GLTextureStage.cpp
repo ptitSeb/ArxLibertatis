@@ -283,23 +283,25 @@ void GLTextureStage::setMipFilter(FilterMode filterMode) {
 	mipFilter = filterMode;
 }
 
-void GLTextureStage::SetMipMapLODBias(float bias) {
+void GLTextureStage::setMipMapLODBias(float bias) {
 #ifdef HAVE_GLES
+ARX_UNUSED(bias);
 //*TODO*
 #else
-	if(mStage != 0) {
-		glActiveTexture(GL_TEXTURE0 + mStage);
-	}
-	
-	setTexEnv(GL_TEXTURE_FILTER_CONTROL, GL_TEXTURE_LOD_BIAS, bias);
-	
-	if(mStage != 0) {
-		glActiveTexture(GL_TEXTURE0);
-	}
+        if(mStage != 0) {
+                glActiveTexture(GL_TEXTURE0 + mStage);
+        }
+        
+        setTexEnv(GL_TEXTURE_FILTER_CONTROL, GL_TEXTURE_LOD_BIAS, bias);
+        
+        if(mStage != 0) {
+                glActiveTexture(GL_TEXTURE0);
+        }
 
-	CHECK_GL;
+        CHECK_GL;
 #endif
 }
+
 
 void GLTextureStage::apply() {
 	
