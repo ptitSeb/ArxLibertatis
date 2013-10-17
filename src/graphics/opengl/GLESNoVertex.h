@@ -29,118 +29,99 @@
 #include <stdio.h>
 
 #define MAX_IDX	65536
-/*static GLfloat	tex0[MAX_IDX*2];
-static GLfloat	tex1[MAX_IDX*2];
-static GLfloat	tex2[MAX_IDX*2];*/
-static GLfloat	vtx0[MAX_IDX*4];
-static GLubyte	col0[MAX_IDX*4];
 static bool		btex1;
 static bool		btex2;
-/*static int 		idx;*/
-/*static GLushort Indices[MAX_IDX];*/
 
 
 template <class Vertex>
-static void renderVertex(const Vertex *vertex, size_t index);
+static void renderVertex(Vertex *vertex, size_t index);
 
 template <>
-void renderVertex(const TexturedVertex *vertex, size_t index) {
+void renderVertex(TexturedVertex *vertex, size_t index) {
 	Color c = Color::fromBGRA(vertex[index].color);
-	col0[index*4+0]=c.r; col0[index*4+1]=c.g; col0[index*4+2]=c.b; col0[index*4+3]=c.a;
+	vertex[index].colorf[0] = (float)c.r*(1.0f/255.0f);
+	vertex[index].colorf[1] = (float)c.g*(1.0f/255.0f);
+	vertex[index].colorf[2] = (float)c.b*(1.0f/255.0f);	
+	vertex[index].colorf[3] = (float)c.a*(1.0f/255.0f);
 	
-/*	tex0[idx*2+0]=vertex.uv.x; tex0[idx*2+1]=vertex.uv.y;*/
 	
 	GLfloat w = 1.0f / vertex[index].rhw; 
-	vtx0[index*4+0]=vertex[index].p.x * w; vtx0[index*4+1]=vertex[index].p.y * w; vtx0[index*4+2]=vertex[index].p.z * w; vtx0[index*4+3]=w;
-/*	idx++;*/
+	vertex[index].coord[0]=vertex[index].p.x * w; 
+	vertex[index].coord[1]=vertex[index].p.y * w; 
+	vertex[index].coord[2]=vertex[index].p.z * w; 
+	vertex[index].coord[3]=w;
 }
 
 template <>
-void renderVertex(const SMY_VERTEX *vertex, size_t index) {
+void renderVertex(SMY_VERTEX *vertex, size_t index) {
 	
 	Color c = Color::fromBGRA(vertex[index].color);
-	col0[index*4+0]=c.r; col0[index*4+1]=c.g; col0[index*4+2]=c.b; col0[index*4+3]=c.a;
+	vertex[index].colorf[0] = (float)c.r*(1.0f/255.0f);
+	vertex[index].colorf[1] = (float)c.g*(1.0f/255.0f);
+	vertex[index].colorf[2] = (float)c.b*(1.0f/255.0f);	
+	vertex[index].colorf[3] = (float)c.a*(1.0f/255.0f);
 	
-/*	tex0[idx*2+0]=vertex.uv.x; tex0[idx*2+1]=vertex.uv.y;
-	
-	vtx0[index*4+0]=vertex[index].p.x; vtx0[index*4+1]=vertex[index].p.y; vtx0[index*4+2]=vertex[index].p.z; vtx0[index*4+3]=1.0f;
-	idx++;*/
 }
 
 template <>
-void renderVertex(const SMY_VERTEX3 *vertex, size_t index) {
+void renderVertex(SMY_VERTEX3 *vertex, size_t index) {
 	
 	Color c = Color::fromBGRA(vertex[index].color);
-	col0[index*4+0]=c.r; col0[index*4+1]=c.g; col0[index*4+2]=c.b; col0[index*4+3]=c.a;
+	vertex[index].colorf[0] = (float)c.r*(1.0f/255.0f);
+	vertex[index].colorf[1] = (float)c.g*(1.0f/255.0f);
+	vertex[index].colorf[2] = (float)c.b*(1.0f/255.0f);	
+	vertex[index].colorf[3] = (float)c.a*(1.0f/255.0f);
 	
-/*	tex0[idx*2+0]=vertex.uv[0].x; tex0[idx*2+1]=vertex.uv[0].y;
-	tex1[idx*2+0]=vertex.uv[1].x; tex0[idx*2+1]=vertex.uv[1].y;
-	tex2[idx*2+0]=vertex.uv[2].x; tex0[idx*2+1]=vertex.uv[2].y;
-	
-	vtx0[index*4+0]=vertex[index].p.x; vtx0[index*4+1]=vertex[index].p.y; vtx0[index*4+2]=vertex[index].p.z; vtx0[index*4+3]=1.0f;
-	idx++;*/
 }
 
 template <class Vertex>
-static void glBeginVertex(const Vertex *vertex);
+static void glBeginVertex(Vertex *vertex);
 
-/*
-template <class Vertex>
-static void glEndVertex(const Vertex & vertex);
-*/
 template <>
-void glBeginVertex(const TexturedVertex  *vertex) {
+void glBeginVertex(TexturedVertex  *vertex) {
 	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(4, GL_FLOAT, 0, vtx0);
+	glVertexPointer(4, GL_FLOAT, sizeof(TexturedVertex), &vertex[0].coord[0]);
 	glEnableClientState(GL_COLOR_ARRAY);
-	glColorPointer(4, GL_UNSIGNED_BYTE, 0, col0);
+	glColorPointer(4, GL_FLOAT, sizeof(TexturedVertex), &vertex[0].colorf[0]);
 	// only one texture
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-/*	glTexCoordPointer(2, GL_FLOAT, 0, tex0);*/
 	glTexCoordPointer(2, GL_FLOAT, sizeof(TexturedVertex), &vertex[0].uv.x);
 	
 	btex1 = btex2 = false;
 	
-/*	idx = 0;*/
 }
 template <>
-void glBeginVertex(const SMY_VERTEX *vertex) {
+void glBeginVertex(SMY_VERTEX *vertex) {
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(3, GL_FLOAT, sizeof(SMY_VERTEX), &vertex[0].p.x);
 	glEnableClientState(GL_COLOR_ARRAY);
-	glColorPointer(4, GL_UNSIGNED_BYTE, 0, col0);
+	glColorPointer(4, GL_FLOAT, sizeof(SMY_VERTEX), &vertex[0].colorf[0]);
 	// only 1 textures
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-/*	glTexCoordPointer(2, GL_FLOAT, 0, tex0);*/
 	glTexCoordPointer(2, GL_FLOAT, sizeof(SMY_VERTEX), &vertex[0].uv.x);
 	btex1 = false;
 	btex2 = false;
 	
-/*	idx = 0;*/
 }
 template <>
-void glBeginVertex(const SMY_VERTEX3 *vertex) {
+void glBeginVertex(SMY_VERTEX3 *vertex) {
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(3, GL_FLOAT, sizeof(SMY_VERTEX3), &vertex[0].p.x);
 	glEnableClientState(GL_COLOR_ARRAY);
-	glColorPointer(4, GL_UNSIGNED_BYTE, 0, col0);
+	glColorPointer(4, GL_FLOAT, sizeof(SMY_VERTEX3), &vertex[0].colorf[0]);
 	// 3 textures
 	glClientActiveTexture(GL_TEXTURE2);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-/*	glTexCoordPointer(2, GL_FLOAT, 0, tex2);*/
 	glTexCoordPointer(2, GL_FLOAT, sizeof(SMY_VERTEX3), &vertex[0].uv[2].x);
 	glClientActiveTexture(GL_TEXTURE1);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-/*	glTexCoordPointer(2, GL_FLOAT, 0, tex1);*/
 	glTexCoordPointer(2, GL_FLOAT, sizeof(SMY_VERTEX3), &vertex[0].uv[1].x);
 	glClientActiveTexture(GL_TEXTURE0);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-/*	glTexCoordPointer(2, GL_FLOAT, 0, tex0);*/
 	glTexCoordPointer(2, GL_FLOAT, sizeof(SMY_VERTEX3), &vertex[0].uv[0].x);
 	btex1 = true;
 	btex2 = true;
 	
-/*	idx = 0;*/
 }
 
 void glEndVertex(const GLenum what, size_t count)

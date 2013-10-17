@@ -654,10 +654,10 @@ void OpenGLRenderer::drawIndexed(Primitive primitive, const TexturedVertex * ver
 	if (nindices==0)
 		return;
 		
-	glBeginVertex(vertices);
+	glBeginVertex((TexturedVertex*)vertices);
 		
 	for(size_t i = 0; i < nindices; i++) {
-		renderVertex(vertices, indices[i]);
+		renderVertex((TexturedVertex*)vertices, indices[i]);
 	}
 		
 	glDrawElements(arxToGlPrimitiveType[primitive], nindices, GL_UNSIGNED_SHORT, indices);

@@ -54,6 +54,11 @@ struct TexturedVertex {
 	Vec3f p;
 	float rhw;
 	
+#ifdef HAVE_GLES
+	float coord[4];
+	float colorf[4];
+#endif
+
 	ColorBGRA color;
 	ColorBGRA specular;
 	
@@ -84,12 +89,18 @@ class VertexBuffer;
 struct SMY_VERTEX {
 	Vec3f p;
 	ColorBGRA color;
+#ifdef HAVE_GLES
+	float colorf[4];
+#endif
 	Vec2f uv;
 };
 
 struct SMY_VERTEX3 {
 	Vec3f p;
 	ColorBGRA color;
+#ifdef HAVE_GLES
+	float colorf[4];
+#endif
 	Vec2f uv[3];
 };
 
