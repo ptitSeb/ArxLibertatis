@@ -99,7 +99,11 @@ struct EERIE_LIGHT {
 	char selected;
 	ExtrasType extras;
 	short status; // on/off 1/0
-	Vec3f pos;
+#ifdef __ARM_NEON__
+	Vec3f pos __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
+#else
+	Vec3f pos;	
+#endif
 	float fallstart;
 	float fallend;
 	float falldiff;
