@@ -54,6 +54,10 @@ ZeniMax Media Inc., Suite 120, Rockville, Maryland 20850 USA.
 #include <boost/numeric/conversion/cast.hpp>
 #include <boost/static_assert.hpp>
 
+#ifdef __ARM_NEON__
+#include <arm_neon.h>
+#endif
+
 using std::min;
 using std::max;
 
@@ -132,8 +136,40 @@ inline T reinterpret(O v) {
 
 inline float ffsqrt(float f) {
 /*SEB* *TODO* Neon inline version */
+#ifdef __ARM_NEON__
+    float32x2_t a,b;
+    float res[2];
+    a=vdup_n_f32(f);
+    b=a;
+    a=vrsqrte_f32(a);
+//  a=vmul_f32(a,vrsqrts_f32(b, vmul_f32(a,a)));
+    b=vmul_f32(a,vrsqrts_f32(b, vmul_f32(a,a)));
+
+    a=vrecpe_f32(b);
+    a=vmul_f32(a,vrecps_f32(b, a));
+//  a=vmul_f32(a,vrecps_f32(b, a));
+
+    vst1_f32(res, a);
+    return res[0];
+#else
 	return reinterpret<f32, u32>(((reinterpret<u32, f32>(f) - 0x3f800000) >> 1) + 0x3f800000);
+#endif
 }
+
+#ifdef __ARM_NEON__
+inline float ffrecip(float f)
+{
+    float32x2_t a,b;
+    float res[2];
+    b=vdup_n_f32(f);
+    a=vrecpe_f32(b);
+    a=vmul_f32(a,vrecps_f32(b, a));
+//  a=vmul_f32(a,vrecps_f32(b, a));
+
+    vst1_f32(res, a);
+    return res[0];
+}
+#endif
 
 /*!
  * Obtain the approximated inverse of the square root of a float.
@@ -144,7 +180,17 @@ inline float ffsqrt(float f) {
  */
 inline float FastRSqrt(float value) {
 /*SEB* *TODO* Neon inline version */
-	
+#ifdef __ARM_NEON__
+    float32x2_t a,b;
+    float res[2];
+    a=vdup_n_f32(value);
+    b=a;
+    a=vrsqrte_f32(a);
+    a=vmul_f32(a,vrsqrts_f32(b, vmul_f32(a,a)));
+//  b=vmul_f32(a,vrsqrts_f32(b, vmul_f32(a,a)));
+    vst1_f32(res, a);
+    return res[0];
+#else	
 	s32 intval = reinterpret<s32, f32>(value);
 	
 	const int MAGIC_NUMBER = 0x5f3759df;
@@ -155,6 +201,7 @@ inline float FastRSqrt(float value) {
 	value = reinterpret<f32, s32>(intval);
 	
 	return value * (1.5f - half * value * value);
+#endif
 }
 
 inline bool IsPowerOf2(unsigned int n) {
@@ -189,9 +236,15 @@ inline void XRotatePoint(Vec3f * in, Vec3f * out, float c, float s) {
 
 //! Normalizes a Vector approximately. Returns its approcimate length before normalization.
 inline float fnormalize(Vec3f & v) {
+#ifdef __ARM_NEON__
+	float len = FastRSqrt(v.lengthSqr());
+	v *= len;
+	return ffrecip(len);
+#else
 	float len = ffsqrt(v.lengthSqr());
 	v *= 1 / len;
 	return len;
+#endif
 }
 
 // Matrix functions
