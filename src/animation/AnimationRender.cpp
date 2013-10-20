@@ -567,15 +567,17 @@ static void Cedric_ApplyLighting(EERIE_3DOBJ * eobj, EERIE_C_DATA * obj, const C
 	for(int i = 0; i != obj->nb_bones; i++) {
 
 		EERIE_QUAT *quat = &obj->bones[i].anim.quat;
+		
 
 		/* Get light value for each vertex */
 		for(int v = 0; v != obj->bones[i].nb_idxvertices; v++) {
 			size_t vertexIndex = obj->bones[i].idxvertices[v];
+			{
+				Vec3f & position = eobj->vertexlist3[vertexIndex].v;
+				Vec3f & normal = eobj->vertexlist[vertexIndex].norm;
 
-			Vec3f & position = eobj->vertexlist3[vertexIndex].v;
-			Vec3f & normal = eobj->vertexlist[vertexIndex].norm;
-
-			eobj->vertexlist3[vertexIndex].vert.color = ApplyLight(quat, position, normal, colorMod);
+				eobj->vertexlist3[vertexIndex].vert.color = ApplyLight(quat, position, normal, colorMod);
+			}
 		}
 	}
 }
@@ -584,10 +586,12 @@ void MakeCLight(const EERIE_QUAT *quat, EERIE_3DOBJ * eobj, const ColorMod & col
 		
 	for(size_t i = 0; i < eobj->vertexlist.size(); i++) {
 
-		Vec3f & position = eobj->vertexlist3[i].v;
-		Vec3f & normal = eobj->vertexlist[i].norm;
+		{
+			Vec3f & position = eobj->vertexlist3[i].v;
+			Vec3f & normal = eobj->vertexlist[i].norm;
 
-		eobj->vertexlist3[i].vert.color = ApplyLight(quat, position, normal, colorMod);
+			eobj->vertexlist3[i].vert.color = ApplyLight(quat, position, normal, colorMod);
+		}
 	}
 }
 
