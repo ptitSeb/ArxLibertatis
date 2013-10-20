@@ -51,18 +51,18 @@ ZeniMax Media Inc., Suite 120, Rockville, Maryland 20850 USA.
 
 struct TexturedVertex {
 	
-	Vec3f p;
+	Vec3f p __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
 	float rhw;
 	
 #ifdef HAVE_GLES
-	float coord[4];
-	float colorf[4];
+	float coord[4] __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
+	float colorf[4] __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
 #endif
 
-	ColorBGRA color;
+	ColorBGRA color __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
 	ColorBGRA specular;
 	
-	Vec2f uv;
+	Vec2f uv __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
 	
 	TexturedVertex() {}
 
@@ -87,7 +87,7 @@ template <class Vertex>
 class VertexBuffer;
 
 struct SMY_VERTEX {
-	Vec3f p;
+	Vec3f p __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
 	ColorBGRA color;
 #ifdef HAVE_GLES
 	float colorf[4];
@@ -96,7 +96,7 @@ struct SMY_VERTEX {
 };
 
 struct SMY_VERTEX3 {
-	Vec3f p;
+	Vec3f p __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
 	ColorBGRA color;
 #ifdef HAVE_GLES
 	float colorf[4];
