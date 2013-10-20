@@ -50,6 +50,10 @@ ZeniMax Media Inc., Suite 120, Rockville, Maryland 20850 USA.
 
 #include "graphics/GraphicsTypes.h"
 
+#ifdef __ARM_NEON__
+#include <arm_neon.h>
+#endif
+
 using std::min;
 using std::max;
 
@@ -547,12 +551,35 @@ EERIE_QUAT Quat_Multiply(const EERIE_QUAT & q1, const EERIE_QUAT & q2)
 	With this method You get 7 less multiplications, but 15 more
 	additions/subtractions. Generally, this is still an improvement.
 	  */
+#ifdef __ARM_NEON__
+	float32x2_t q1xy =  vld1_f32(&q1.x);
+	float32x2_t q1zx = {q1.z, q1.x};
+	float32x2_t q1yz =  vld1_f32(&q1.y);
+	float32x2_t q2wx = {q2.w, -q2.x};
+	float32x2_t q2zx = {q2.z, q2.x};
+	float32x2_t q2yy = {q2.y, -q2.y};
+	float32x2_t q2yz = vld1_f32(&q2.y);
+	float32x2_t q2xz = vrev64_f32(q2zx);
+	float32x4_t t1 = vmlsq_f32(vmulq_f32(vdupq_n_f32(q1.w), vld1q_f32(&q2.x)),
+        			vcombine_f32(q1zx, q1yz), 
+				vcombine_f32(q2yz, q2xz));
+        float32x4_t t2 = vmulq_f32(vcombine_f32(q1xy, q1zx), 
+				vcombine_f32(vdup_n_f32(q2.w), q2wx));
+        float32x4_t t3 = vmulq_f32(vcombine_f32(q1yz, q1xy), 
+				vcombine_f32(q2zx, q2yy));
+	t1 = vaddq_f32(t1, vaddq_f32(t2,t3));
+	
+
+	return EERIE_QUAT(t1[0], t1[1], t1[2], t1[3]);
+
+#else
 
 	return EERIE_QUAT(
 		q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y,
 		q1.w * q2.y + q1.y * q2.w + q1.z * q2.x - q1.x * q2.z,
 		q1.w * q2.z + q1.z * q2.w + q1.x * q2.y - q1.y * q2.x,
 		q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z);
+#endif
 }
 
 //*************************************************************************************
@@ -560,10 +587,32 @@ EERIE_QUAT Quat_Multiply(const EERIE_QUAT & q1, const EERIE_QUAT & q2)
 //*************************************************************************************
 void Quat_Divide(EERIE_QUAT * dest, const EERIE_QUAT * q1, const EERIE_QUAT * q2)
 {
+#ifdef __ARM_NEON__
+	float32x2_t q1xy =  vld1_f32(&q1->x);
+	float32x2_t q1zx = {q1->z, q1->x};
+	float32x2_t q1yz =  vld1_f32(&q1->y);
+	float32x2_t q2wx = {q2->w, -q2->x};
+	float32x2_t q2zx = {q2->z, q2->x};
+	float32x2_t q2yy = {q2->y, -q2->y};
+	float32x2_t q2yz = vld1_f32(&q2->y);
+	float32x2_t q2xz = vrev64_f32(q2zx);
+	float32x4_t t1 = vmlaq_f32(vmulq_f32(vdupq_n_f32(q1->w), vld1q_f32(&q2->x)),
+        			vcombine_f32(q1zx, q1yz), 
+				vcombine_f32(q2yz, q2xz));
+        float32x4_t t2 = vmulq_f32(vcombine_f32(q1xy, q1zx), 
+				vcombine_f32(vdup_n_f32(q2->w), q2wx));
+        float32x4_t t3 = vmulq_f32(vcombine_f32(q1yz, q1xy), 
+				vcombine_f32(q2zx, q2yy));
+	t1 = vsubq_f32(t1, vaddq_f32(t2,t3));
+	
+	vst1q_f32(&dest->x, t1);
+
+#else
 	dest->x = q1->w * q2->x - q1->x * q2->w - q1->y * q2->z + q1->z * q2->y;
 	dest->y = q1->w * q2->y - q1->y * q2->w - q1->z * q2->x + q1->x * q2->z;
 	dest->z = q1->w * q2->z - q1->z * q2->w - q1->x * q2->y + q1->y * q2->x;
 	dest->w = q1->w * q2->w + q1->x * q2->x + q1->y * q2->y + q1->z * q2->z;
+#endif
 }
 
 // Invert-Transform of vertex by a quaternion
@@ -777,7 +826,7 @@ void QuatFromMatrix(EERIE_QUAT & quat, EERIEMATRIX & mat)
 		int j = nxt[i];
 		int k = nxt[j];
 
-		s = sqrt((m[i][i] - (m[j][j] + m[k][k])) + 1.0f);
+		s = sqrtf((m[i][i] - (m[j][j] + m[k][k])) + 1.0f);
 
 		q[i] = s * 0.5f;
 
