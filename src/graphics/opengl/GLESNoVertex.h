@@ -32,6 +32,77 @@
 static bool		btex1;
 static bool		btex2;
 
+template <class Vertex>
+static void calcVertex(Vertex *vertex, size_t offset, size_t count);
+template <>
+void calcVertex(TexturedVertex *vertex,  size_t offset, size_t count) {
+	for (size_t index=offset; index<offset+count; index++) {
+		Color c = Color::fromBGRA(vertex[index].color);
+#ifdef __ARM_ARM__	
+		float32x4_t a = vmulq_f32(vcvtq_u32_f32(vmovl_u16(vget_high_u16(vmovl_u8(vld1_u8(&c.r))))), vdupq_n_f32(1.0f/255.0f));
+		vst1q_f32(&vertex[index].colorf[0], a);
+		
+		float32x4_t p = vld1q_f32(&vertex[index].p.x);
+		float32x2_t wx2 = vdup_f32(vgetq_lane_f32(p,3));
+		// w = 1.0f / w;
+		float32x2_t a=vrecpe_f32(wx2);
+        wx2=vmul_f32(a,vrecps_f32(wx2, a));
+		vsetq_lane_f32(p, 3, 1.0f);
+		// x2 => x4
+		float32x4_t w = vdupq_n_f32(vget_high_f32(wx2));
+		vst1q_f32(&vertex[index].coord[0], vmulq_f32(p, w));
+#else
+		vertex[index].colorf[0] = (float)c.r*(1.0f/255.0f);
+		vertex[index].colorf[1] = (float)c.g*(1.0f/255.0f);
+		vertex[index].colorf[2] = (float)c.b*(1.0f/255.0f);	
+		vertex[index].colorf[3] = (float)c.a*(1.0f/255.0f);
+		
+		GLfloat w = 1.0f / vertex[index].rhw; 
+		vertex[index].coord[0]=vertex[index].p.x * w; 
+		vertex[index].coord[1]=vertex[index].p.y * w; 
+		vertex[index].coord[2]=vertex[index].p.z * w; 
+		vertex[index].coord[3]=w;
+#endif	
+	}
+}
+
+template <>
+void calcVertex(SMY_VERTEX *vertex,  size_t offset, size_t count) {
+	
+	for (size_t index=offset; index<offset+count; index++) {
+		Color c = Color::fromBGRA(vertex[index].color);
+#ifdef __ARM_ARM__	
+		float32x4_t a = vmulq_f32(vcvtq_u32_f32(vmovl_u16(vget_high_u16(vmovl_u8(vld1_u8(&c.r))))), vdupq_n_f32(1.0f/255.0f));
+		vst1q_f32(&vertex[index].colorf[0], a);
+#else
+		vertex[index].colorf[0] = (float)c.r*(1.0f/255.0f);
+		vertex[index].colorf[1] = (float)c.g*(1.0f/255.0f);
+		vertex[index].colorf[2] = (float)c.b*(1.0f/255.0f);	
+		vertex[index].colorf[3] = (float)c.a*(1.0f/255.0f);
+#endif
+	}
+}
+
+template <>
+void calcVertex(SMY_VERTEX3 *vertex,  size_t offset, size_t count) {
+	
+	for (size_t index=offset; index<offset+count; index++) {
+		Color c = Color::fromBGRA(vertex[index].color);
+#ifdef __ARM_ARM__	
+		float32x4_t a = vmulq_f32(vcvtq_u32_f32(vmovl_u16(vget_high_u16(vmovl_u8(vld1_u8(&c.r))))), vdupq_n_f32(1.0f/255.0f));
+		vst1q_f32(&vertex[index].colorf[0], a);
+#else
+		vertex[index].colorf[0] = (float)c.r*(1.0f/255.0f);
+		vertex[index].colorf[1] = (float)c.g*(1.0f/255.0f);
+		vertex[index].colorf[2] = (float)c.b*(1.0f/255.0f);	
+		vertex[index].colorf[3] = (float)c.a*(1.0f/255.0f);
+#endif
+	}
+	
+}
+
+
+
 
 template <class Vertex>
 static void renderVertex(Vertex *vertex, size_t index);
@@ -161,10 +232,11 @@ public:
 		arx_assert(offset + count <= capacity());
 		
 		std::copy(vertices, vertices + count, buffer + offset);
+		
 	}
 	
 	Vertex * lock(BufferFlags flags, size_t offset, size_t count) {
-		ARX_UNUSED(flags), ARX_UNUSED(count);
+		ARX_UNUSED(flags);
 		return buffer + offset;
 	}
 	
@@ -183,10 +255,12 @@ public:
 		if (count>0) {
 			glBeginVertex(pBuf);
 			
+			calcVertex(buffer, offset, count);
+/*			
 			for(size_t i = 0; i < count; i++) {
 				renderVertex(pBuf, i);
 			}
-			
+*/			
 			glEndVertex(arxToGlPrimitiveType[primitive], count);
 		}
 		CHECK_GL;
@@ -203,11 +277,13 @@ public:
 		
 		if (nbindices>0) {
 			glBeginVertex(pBuf);
-			
+
+			calcVertex(buffer, offset, count);
+/*			
 			for(size_t i = 0; i < nbindices; i++) {
 				renderVertex(pBuf, indices[i]);
 			}
-			
+*/			
 			glDrawElements(arxToGlPrimitiveType[primitive], nbindices, GL_UNSIGNED_SHORT, indices);
 			
 			glEndVertex(arxToGlPrimitiveType[primitive], 0);
@@ -224,6 +300,7 @@ private:
 	
 	OpenGLRenderer * renderer;
 	Vertex * buffer;
+	
 	
 };
 
