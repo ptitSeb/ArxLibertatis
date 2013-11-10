@@ -719,7 +719,11 @@ int EERIELaunchRay3(Vec3f * orgn, Vec3f * dest,  Vec3f * hit, EERIEPOLY * epp, l
 	long lpx, lpz;
 	long voidlast;
 	long px, pz;
+#ifdef PANDORA
+	float pas = 3.2f;
+#else
 	float pas = 1.5f;
+#endif
 	
 	long iii = 0;
 	float maxstepp = 20000.f / pas;
@@ -727,13 +731,17 @@ int EERIELaunchRay3(Vec3f * orgn, Vec3f * dest,  Vec3f * hit, EERIEPOLY * epp, l
 	
 	voidlast = 0;
 	lpx = lpz = -1;
+#ifdef __ARM_NEON__
+	d.xyz0 = vsubq_f32(dest->xyz0, orgn->xyz0);
+	ad.xyz0 = vabsq_f32(d.xyz0);
+#else
 	d.x = (dest->x - orgn->x);
 	ad.x = EEfabs(d.x);
 	d.y = (dest->y - orgn->y);
 	ad.y = EEfabs(d.y);
 	d.z = (dest->z - orgn->z);
 	ad.z = EEfabs(d.z);
-	
+#endif
 	if(ad.x >= ad.y && ad.x >= ad.z) {
 		i.x = (ad.x != d.x) ? (-1.f * pas) : (1.f * pas);
 		i.y = d.y / (ad.x / pas);
@@ -1473,8 +1481,8 @@ void EERIE_CreateMatriceProj(float _fWidth, float _fHeight, EERIE_CAMERA * cam) 
 	float fFOV = radians(_fFOV);
 	float fFarPlane = _fZFar;
 	float fNearPlane = _fZNear;
-	float w = fAspect * (cosf(fFOV / 2) / sinf(fFOV / 2));
-	float h =   1.0f  * (cosf(fFOV / 2) / sinf(fFOV / 2));
+	float w = fAspect * (cos(fFOV / 2) / sin(fFOV / 2));
+	float h =   1.0f  * (cos(fFOV / 2) / sin(fFOV / 2));
 	float Q = fFarPlane / (fFarPlane - fNearPlane);
 
 	memset(&ProjectionMatrix, 0, sizeof(EERIEMATRIX));

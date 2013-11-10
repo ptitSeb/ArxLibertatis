@@ -515,11 +515,25 @@ void ResetTileLights() {
 void ComputeTileLights(short x,short z)
 {
 	tilelights[x][z].el.clear();
+#ifdef __ARM_NEON__
+	float32x2_t aa=vcvt_f32_s32(vget_low_s32(vmovl_s16(vset_lane_s16(z, vdup_n_s16(x), 1))));
+	float32x2_t bb=vcvt_f32_s32(vget_low_s32(vmovl_s16(vset_lane_s16(ACTIVEBKG->Zdiv, vdup_n_s16(ACTIVEBKG->Xdiv), 1))));
+	float32x2_t v60=vdup_n_f32(60.f);
+	aa=vmul_f32(vadd_f32(aa, vdup_n_f32(0.5f)), bb);
+#else
 	float xx=((float)x+0.5f)*ACTIVEBKG->Xdiv;
 	float zz=((float)z+0.5f)*ACTIVEBKG->Zdiv;
-
+#endif
 	for(long i=0; i < TOTPDL; i++) {
+#ifdef __ARM_NEON__
+		bb = vsub_f32(vset_lane_f32(PDL[i]->pos.z, PDL[i]->pos.xy, 1), aa);
+		bb = vmul_f32(bb, bb);
+		float32x2_t cc = vadd_f32(vdup_n_f32(PDL[i]->fallend), v60);
+		uint32x2_t res = vclt_f32(vpadd_f32(bb, bb), vmul_f32(cc, cc));
+		if (vget_lane_u32(res, 0)) {
+#else
 		if(closerThan(Vec2f(xx, zz), Vec2f(PDL[i]->pos.x, PDL[i]->pos.z), PDL[i]->fallend + 60.f)) {
+#endif
 
 			tilelights[x][z].el.push_back(PDL[i]);
 		}
@@ -622,14 +636,10 @@ ColorBGRA ApplyLight(const EERIE_QUAT * quat, const Vec3f & position, const Vec3
 
 #ifdef __ARM_NEON__
 	uint32x2_t res_if;
-	float32x2_t f32_zero = vdup_n_f32(0);
-	float32x2_t norm_a=vld1_f32(&normal.x), norm_b=vset_lane_f32(normal.z, f32_zero, 0);
-	float32x2_t pos_a=vld1_f32(&position.x), pos_b=vset_lane_f32(position.z, f32_zero, 0);
+	float32x2_t f32_zero = Vec2f::ZERO.xy;
 	float32x2_t dif_a=vdup_n_f32(materialDiffuse);
 	float32x2_t tempColor_a = vld1_f32(&colorMod.ambientColor.b), tempColor_b=vset_lane_f32(colorMod.ambientColor.r, f32_zero, 0);
-	float32x2_t temp_a, temp_b, vl1, vl2;
-/*	EERIE_QUAT rev_quat = *quat;
-	Quat_Reverse(&rev_quat);*/
+	float32x2_t temp_a, temp_b;
 #else
 	Color3f tempColor = colorMod.ambientColor;
 #endif
@@ -642,22 +652,19 @@ ColorBGRA ApplyLight(const EERIE_QUAT * quat, const Vec3f & position, const Vec3
 			break;
 #ifdef __ARM_NEON__
 		Vec3f vLight = light->pos - position;
-		temp_a = vld1_f32(&vLight.x); 		// a[0] = x, a[1] = y
-		vl1=temp_a;
-		temp_b=vset_lane_f32(vLight.z, f32_zero, 1);	// b[1] = z, b[0] = 0
-		vl2=temp_b;
+		temp_a = vLight.xy; 		// a[0] = x, a[1] = y
+		temp_b=vLight.z0;	// b[1] = z, b[0] = 0
 		temp_a = vmla_f32(vmul_f32(temp_b, temp_b), temp_a, temp_a);	// a[0] = x*x + z*z, b[1]=y*y + 0*0
-		temp_a = vpadd_f32(temp_a, temp_a);
+		temp_b = vpadd_f32(temp_a, temp_a);
 		res_if=vceq_f32(temp_a, f32_zero);
 		if (vget_lane_u32(res_if, 0))
-			vLight = Vec3f(0,0,0);
+			vLight = Vec3f::ZERO;
 		else 
 		{
-			temp_b=temp_a;
-			temp_a=vrsqrte_f32(temp_a);
-			temp_a=vmul_f32(temp_a,vrsqrts_f32(temp_b, vmul_f32(temp_a,temp_a)));
-			vst1_f32(&vLight.x, vmul_f32(vl1, temp_a));
-			vLight.z=vget_lane_f32(vmul_f32(vl2, temp_a), 1);
+			temp_a=vrsqrte_f32(temp_b);
+			temp_a=vmul_f32(temp_a,vrsqrts_f32(vmul_f32(temp_b,temp_a), temp_a));
+			vLight.xy= vmul_f32(vLight.xy, temp_a);
+			vLight.z0= vmul_f32(vLight.z0, temp_a);
 		}
 #else
 		Vec3f vLight = (light->pos - position).getNormalized();
@@ -667,27 +674,23 @@ ColorBGRA ApplyLight(const EERIE_QUAT * quat, const Vec3f & position, const Vec3
 		TransformInverseVertexQuat(quat, &vLight, &Cur_vLights);
 #ifdef __ARM_NEON__
 		float32x2_t cosangle;
-		temp_a=vld1_f32(&Cur_vLights.x);
-		temp_b=vset_lane_f32(Cur_vLights.z, f32_zero, 0);
-		temp_a=vmla_f32(vmul_f32(norm_b, temp_b), norm_a, temp_a);
+		temp_a=vmla_f32(vmul_f32(normal.z0, Cur_vLights.z0), normal.xy, Cur_vLights.xy);
 		cosangle=vpadd_f32(temp_a, temp_a);
 		res_if=vcge_f32(cosangle, f32_zero);
 		if (vget_lane_u32(res_if, 0)) {
 			float32x2_t distance;
 			// load vector difference
-			temp_a=vsub_f32(vld1_f32(&light->pos.x), pos_a);
-			temp_b=vsub_f32(vset_lane_f32(light->pos.z, f32_zero, 0), pos_b);
+			temp_a=vsub_f32(light->pos.xy, position.xy);
+			temp_b=vsub_f32(light->pos.z0, position.z0);
 			// sqare each componant and add themself
 			temp_a = vmla_f32(vmul_f32(temp_b, temp_b), temp_a, temp_a);	// a[0] = x*x + z*z, b[1]=y*y + 0*0
-			temp_a = vpadd_f32(temp_a, temp_a);
+			temp_b = vpadd_f32(temp_a, temp_a);
 			// inverse sqareroot
-			temp_b=temp_a;
-			temp_a=vrsqrte_f32(temp_a);
-			temp_a=vmul_f32(temp_a,vrsqrts_f32(temp_b, vmul_f32(temp_a,temp_a)));
+			temp_a=vrsqrte_f32(temp_b);
+			temp_a=vmul_f32(temp_a,vrsqrts_f32(vmul_f32(temp_b,temp_a), temp_a));
 			// reciprocal
-			temp_b=temp_a;
-			temp_a=vrecpe_f32(temp_b);
-			distance=vmul_f32(temp_a,vrecps_f32(temp_b, temp_a));
+			temp_b=vrecpe_f32(temp_a);
+			distance=vmul_f32(temp_b,vrecps_f32(temp_b, temp_a));
 			// ok now
 			res_if=vcle_f32(distance, vdup_n_f32(light->fallstart));
 			if (vget_lane_u32(res_if, 0)) {
@@ -742,7 +745,7 @@ ColorBGRA ApplyLight(const EERIE_QUAT * quat, const Vec3f & position, const Vec3
 	itemp = vminq_s32(vdupq_n_s32(255), vmaxq_s32(vdupq_n_s32(0), itemp));
 	int it32[4];
 	vst1q_s32(it32, itemp);
-	return (0xFF000000L | (it32[0] << 16) | (it32[1] << 8) | (it32[2]));
+	return (0xFF000000L | (it32[2] << 16) | (it32[1] << 8) | (it32[0]));
 #else
 	tempColor *= colorMod.factor;
 	tempColor += colorMod.term;
@@ -756,11 +759,17 @@ ColorBGRA ApplyLight(const EERIE_QUAT * quat, const Vec3f & position, const Vec3
 
 void ApplyTileLights(EERIEPOLY * ep, short x, short y)
 {
-
+#ifdef __ARM_NEON__
+	float32x4_t lightInfraFactor=vdupq_n_f32(1.0f);
+	if(Project.improve) {
+		lightInfraFactor = vsetq_lane_f32(4.f, lightInfraFactor, 2);
+	}
+#else
 	Color3f lightInfraFactor = Color3f::white;
 	if(Project.improve) {
 		lightInfraFactor.r = 4.f;
 	}
+#endif
 
 	TILE_LIGHTS * tls = &tilelights[x][y];
 	size_t nbvert = (ep->type & POLY_QUAD) ? 4 : 3;
@@ -771,13 +780,17 @@ void ApplyTileLights(EERIEPOLY * ep, short x, short y)
 			ep->tv[j].color = ep->v[j].color;
 			continue;
 		}
-
+#ifdef __ARM_NEON__
+		uint32_t col=ep->v[j].color;
+		col=(col&0xFF00FF00)|((col&0x00FF0000)>>16)|((col&0x000000FF)<<16);
+		float32x4_t tempColor = vcvtq_f32_u32(vmovl_u16(vget_low_u16(vmovl_u8(vreinterpret_u8_u32(vdup_n_u32(col))))));
+#else
 		Color3f tempColor;
 		long c = ep->v[j].color;
 		tempColor.r = (float)((c >> 16) & 255);
 		tempColor.g = (float)((c >> 8) & 255);
 		tempColor.b = (float)(c & 255);
-
+#endif
 		Vec3f & position = ep->v[j].p;
 		Vec3f & normal = ep->nrml[j];
 
@@ -785,7 +798,52 @@ void ApplyTileLights(EERIEPOLY * ep, short x, short y)
 			EERIE_LIGHT * light = tls->el[i];
 
 			Vec3f vLight = (light->pos - position).getNormalized();
-
+#ifdef __ARM_NEON__
+			float32x2_t temp_a=vmla_f32(vmul_f32(normal.z0, vLight.z0), normal.xy, vLight.xy);
+			float32x2_t temp_b;
+			float32x2_t cosangle=vpadd_f32(temp_a, temp_a);
+			uint32x2_t res_if=vcge_f32(cosangle, Vec2f::ZERO.xy);
+			if (vget_lane_u32(res_if, 0)) {
+//				float32x2_t distance;
+				// load vector difference
+				temp_a=vsub_f32(light->pos.xy, position.xy);
+				temp_b=vsub_f32(light->pos.z0, position.z0);
+				// sqare each componant and add themself
+				temp_a = vmla_f32(vmul_f32(temp_b, temp_b), temp_a, temp_a);	// a[0] = x*x + z*z, b[1]=y*y + 0*0
+				temp_b = vpadd_f32(temp_a, temp_a);
+				// ok now
+				temp_a = vdup_n_f32(light->fallstart);
+				res_if=vcle_f32(temp_b, vmul_f32(temp_a, temp_a));
+				if (vget_lane_u32(res_if, 0)) {
+					cosangle=vmul_f32(cosangle, vdup_n_f32(light->precalc));
+				} else {
+					// inverse sqareroot
+					temp_a=vrsqrte_f32(temp_b);
+					temp_a=vmul_f32(temp_a,vrsqrts_f32(vmul_f32(temp_b,temp_a), temp_a));
+					// reciprocal
+					temp_b=vrecpe_f32(temp_a);
+					temp_a=vmul_f32(temp_b,vrecps_f32(temp_b, temp_a));
+					float32x2_t p=vmul_f32(vsub_f32(vdup_n_f32(light->fallend), temp_a), vdup_n_f32(light->falldiffmul));
+					res_if=vcle_f32(p, Vec2f::ZERO.xy);
+					if (vget_lane_u32(res_if, 0))
+						cosangle=Vec2f::ZERO.xy;
+					else
+						cosangle=vmul_f32(cosangle, vmul_f32(p, vdup_n_f32(light->precalc)));
+				}
+				
+				cosangle=vmul_n_f32(cosangle, 0.5f);
+				float32x4_t temp_c=vmulq_f32(vcombine_f32(vld1_f32(&light->rgb255.b), vset_lane_f32(light->rgb255.r, Vec2f::ZERO.xy, 0)), lightInfraFactor);
+				tempColor=vmlaq_f32(tempColor, temp_c, vcombine_f32(cosangle, cosangle));
+			}
+		}
+		int32x4_t itemp;
+		itemp = vcvtq_s32_f32(tempColor);
+		itemp = vminq_s32(vdupq_n_s32(255), vmaxq_s32(vdupq_n_s32(0), itemp));
+		int it32[4];
+		vst1q_s32(it32, itemp);
+		ep->tv[j].color = (0xFF000000L | (it32[2] << 16) | (it32[1] << 8) | (it32[0]));
+	}
+#else
 			float cosangle = dot(normal, vLight);
 
 			if(cosangle > 0.f) {
@@ -812,6 +870,7 @@ void ApplyTileLights(EERIEPOLY * ep, short x, short y)
 		u8 ib = clipByte255(tempColor.b);
 		ep->tv[j].color = (0xFF000000L | (ir << 16) | (ig << 8) | (ib));
 	}
+#endif
 }
 
 
@@ -836,9 +895,11 @@ float my_CheckInPoly(float x, float y, float z, EERIEPOLY * mon_ep, EERIE_LIGHT 
 
 	Vec3f dest;
 	Vec3f hit;
-
+#ifdef __ARM_NEON__
+	float32x4_t fDiff = vdupq_n_f32(5.f);
+	float32x4_t xyz0 = {x, y, z, 0};
+#endif
 	Vec3f orgn = light->pos;
-
 	for (long j = pz - 2; j <= pz + 2; j++)
 		for (long i = px - 2; i <= px + 2; i++)
 		{
@@ -857,14 +918,22 @@ float my_CheckInPoly(float x, float y, float z, EERIEPOLY * mon_ep, EERIE_LIGHT 
 
 					for (a = 0; a < nbvert; a++)
 					{
+#ifdef __ARM_NEON__
+						uint32x4_t res=vcaleq_f32(vsubq_f32(ep->v[a].p.xyz0, xyz0), fDiff);
+						if (vgetq_lane_u32(res, 0) & vgetq_lane_u32(res, 1) & vgetq_lane_u32(res, 2))
+						{
+							float32x2_t a=vmla_f32(vmul_f32(mon_ep->nrml->xy, ep->nrml->xy), mon_ep->nrml->z0, ep->nrml->z0);
+							uint32x2_t res2 = vcgt_f32(vpadd_f32(a, a), Vec2f::ZERO.xy);
+							if (vget_lane_u32(res2, 0)) {
+#else
 						float fDiff = 5.f;
-
 						if ((fabs(ep->v[a].p.x - x) <= fDiff) &&
 								(fabs(ep->v[a].p.y - y) <= fDiff) &&
 								(fabs(ep->v[a].p.z - z) <= fDiff))
 						{
 
 							if(dot(*mon_ep->nrml, *ep->nrml) > 0.0f) {
+#endif
 								nb_totalvertexinpoly += nbvert;
 								for(b = 0; b < nbvert; b++) {
 									dest = ep->v[b].p;

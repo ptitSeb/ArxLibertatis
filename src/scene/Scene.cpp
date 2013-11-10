@@ -715,6 +715,25 @@ void ARX_PORTALS_InitDrawnRooms()
 
 bool IsSphereInFrustrum(const Vec3f & point, const EERIE_FRUSTRUM & frustrum, float radius)
 {
+#ifdef __ARM_NEON__
+	float32x4_t dists, aa;
+	float32x2_t bb;
+	aa=vmulq_f32(point.xyz0, vld1q_f32(&frustrum.plane[0].a));
+	bb=vadd_f32(vget_low_f32(aa), vget_high_f32(aa));
+	dists=vsetq_lane_f32(vget_lane_f32(vadd_f32(vpadd_f32(bb, bb), vdup_n_f32(frustrum.plane[0].d)), 0), dists, 0);
+	aa=vmulq_f32(point.xyz0, vld1q_f32(&frustrum.plane[1].a));
+	bb=vadd_f32(vget_low_f32(aa), vget_high_f32(aa));
+	dists=vsetq_lane_f32(vget_lane_f32(vadd_f32(vpadd_f32(bb, bb), vdup_n_f32(frustrum.plane[1].d)), 0), dists, 1);
+	aa=vmulq_f32(point.xyz0, vld1q_f32(&frustrum.plane[2].a));
+	bb=vadd_f32(vget_low_f32(aa), vget_high_f32(aa));
+	dists=vsetq_lane_f32(vget_lane_f32(vadd_f32(vpadd_f32(bb, bb), vdup_n_f32(frustrum.plane[2].d)), 0), dists, 2);
+	aa=vmulq_f32(point.xyz0, vld1q_f32(&frustrum.plane[3].a));
+	bb=vadd_f32(vget_low_f32(aa), vget_high_f32(aa));
+	dists=vsetq_lane_f32(vget_lane_f32(vadd_f32(vpadd_f32(bb, bb), vdup_n_f32(frustrum.plane[3].d)), 0), dists, 3);
+	uint32x4_t res=vcgtq_f32(dists, vnegq_f32(vdupq_n_f32(radius)));
+	if (res[0] & res[1] & res[2] & res[3])
+		return true;
+#else
 	float dists[4];
 	dists[0]=frustrum.plane[0].getDist(point);
 	dists[1]=frustrum.plane[1].getDist(point);
@@ -726,7 +745,7 @@ bool IsSphereInFrustrum(const Vec3f & point, const EERIE_FRUSTRUM & frustrum, fl
 		&&	(dists[2]+radius>0)
 		&&	(dists[3]+radius>0) )
 		return true;
-
+#endif
 	return false;
 }
 
@@ -1106,7 +1125,9 @@ void ARX_PORTALS_Frustrum_RenderRoomTCullSoft(long room_num, const EERIE_FRUSTRU
 	if(!room.pVertexBuffer) {
 		// No need to spam this for every frame as there will already be an
 		// earlier warning
+#ifndef PANDORA
 		LogDebug("no vertex data for room " << room_num);
+#endif
 		return;
 	}
 
@@ -1118,6 +1139,8 @@ void ARX_PORTALS_Frustrum_RenderRoomTCullSoft(long room_num, const EERIE_FRUSTRU
 
 	for(long lll=0; lll<room.nb_polys; lll++, pEPDATA++) {
 		FAST_BKG_DATA *feg = &ACTIVEBKG->fastdata[pEPDATA->px][pEPDATA->py];
+
+		EERIEPOLY *ep = &feg->polydata[pEPDATA->idx];
 
 		if(!feg->treat) {
 			short ix = std::max(pEPDATA->px - 1, 0);
@@ -1135,8 +1158,6 @@ void ARX_PORTALS_Frustrum_RenderRoomTCullSoft(long room_num, const EERIE_FRUSTRU
 				}
 			}
 		}
-
-		EERIEPOLY *ep = &feg->polydata[pEPDATA->idx];
 
 		if(!ep->tex) {
 			continue;
@@ -1161,9 +1182,17 @@ void ARX_PORTALS_Frustrum_RenderRoomTCullSoft(long room_num, const EERIE_FRUSTRU
 
 		Vec3f nrm = ep->v[2].p - ACTIVECAM->orgTrans.pos;
 		int to = (ep->type & POLY_QUAD) ? 4 : 3;
-
+#ifdef __ARM_NEON__
+		float32x2_t aa = vmla_f32(vmul_f32(ep->norm.xy, nrm.xy), ep->norm.z0, nrm.z0);
+		uint32x2_t res = vcgt_f32(vpadd_f32(aa, aa), Vec2f::ZERO.xy);
+		if(!(ep->type & POLY_DOUBLESIDED) && vget_lane_u32(res, 0) ) {
+				aa = vmla_f32(vmul_f32(ep->norm2.xy, nrm.xy), ep->norm2.z0, nrm.z0);
+				res = vcgt_f32(vpadd_f32(aa, aa), Vec2f::ZERO.xy);
+				if(to == 3 || vget_lane_u32(res, 0) ) {
+#else
 		if(!(ep->type & POLY_DOUBLESIDED) && dot(ep->norm , nrm) > 0.f) {
 			if(to == 3 || dot(ep->norm2 , nrm) > 0.f) {
+#endif
 				continue;
 			}
 		}

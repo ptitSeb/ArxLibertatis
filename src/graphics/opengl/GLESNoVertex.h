@@ -37,21 +37,23 @@ static void calcVertex(Vertex *vertex, size_t offset, size_t count);
 template <>
 void calcVertex(TexturedVertex *vertex,  size_t offset, size_t count) {
 	for (size_t index=offset; index<offset+count; index++) {
-		Color c = Color::fromBGRA(vertex[index].color);
-#ifdef __ARM_ARM__	
-		float32x4_t a = vmulq_f32(vcvtq_u32_f32(vmovl_u16(vget_high_u16(vmovl_u8(vld1_u8(&c.r))))), vdupq_n_f32(1.0f/255.0f));
+#ifdef __ARM_NEON__	
+		uint32_t col=vertex[index].color;
+		col=(col&0xFF00FF00)|((col&0x00FF0000)>>16)|((col&0x000000FF)<<16);
+		float32x4_t a = vmulq_n_f32(vcvtq_f32_u32(vmovl_u16(vget_low_u16(vmovl_u8(vreinterpret_u8_u32(vdup_n_u32(col)))))), 1.0f/255.0f);
 		vst1q_f32(&vertex[index].colorf[0], a);
 		
-		float32x4_t p = vld1q_f32(&vertex[index].p.x);
-		float32x2_t wx2 = vdup_f32(vgetq_lane_f32(p,3));
+		float32x4_t p = vsetq_lane_f32(1.0f, vertex[index].p.xyz0, 3);
+//		vst1q_f32(&vertex[index].coord[0], vmulq_f32(p, vdupq_n_f32(1.0f/vertex[index].rhw)));
+		float32x2_t wx2 = vdup_n_f32(vertex[index].rhw);
 		// w = 1.0f / w;
-		float32x2_t a=vrecpe_f32(wx2);
-        wx2=vmul_f32(a,vrecps_f32(wx2, a));
-		vsetq_lane_f32(p, 3, 1.0f);
+		float32x2_t aa=vrecpe_f32(wx2);
+//        aa=vmul_f32(aa,vrecps_f32(wx2, aa));
+        wx2=vmul_f32(aa,vrecps_f32(aa, wx2));
 		// x2 => x4
-		float32x4_t w = vdupq_n_f32(vget_high_f32(wx2));
-		vst1q_f32(&vertex[index].coord[0], vmulq_f32(p, w));
+		vst1q_f32(&vertex[index].coord[0], vmulq_f32(p, vcombine_f32(wx2, wx2)));
 #else
+		Color c = Color::fromBGRA(vertex[index].color);
 		vertex[index].colorf[0] = (float)c.r*(1.0f/255.0f);
 		vertex[index].colorf[1] = (float)c.g*(1.0f/255.0f);
 		vertex[index].colorf[2] = (float)c.b*(1.0f/255.0f);	
@@ -70,11 +72,13 @@ template <>
 void calcVertex(SMY_VERTEX *vertex,  size_t offset, size_t count) {
 	
 	for (size_t index=offset; index<offset+count; index++) {
-		Color c = Color::fromBGRA(vertex[index].color);
-#ifdef __ARM_ARM__	
-		float32x4_t a = vmulq_f32(vcvtq_u32_f32(vmovl_u16(vget_high_u16(vmovl_u8(vld1_u8(&c.r))))), vdupq_n_f32(1.0f/255.0f));
+#ifdef __ARM_NEON__
+		uint32_t col=vertex[index].color;
+		col=(col&0xFF00FF00)|((col&0x00FF0000)>>16)|((col&0x000000FF)<<16);
+		float32x4_t a = vmulq_n_f32(vcvtq_f32_u32(vmovl_u16(vget_low_u16(vmovl_u8(vreinterpret_u8_u32(vdup_n_u32(col)))))), 1.0f/255.0f);
 		vst1q_f32(&vertex[index].colorf[0], a);
 #else
+		Color c = Color::fromBGRA(vertex[index].color);
 		vertex[index].colorf[0] = (float)c.r*(1.0f/255.0f);
 		vertex[index].colorf[1] = (float)c.g*(1.0f/255.0f);
 		vertex[index].colorf[2] = (float)c.b*(1.0f/255.0f);	
@@ -87,11 +91,13 @@ template <>
 void calcVertex(SMY_VERTEX3 *vertex,  size_t offset, size_t count) {
 	
 	for (size_t index=offset; index<offset+count; index++) {
-		Color c = Color::fromBGRA(vertex[index].color);
-#ifdef __ARM_ARM__	
-		float32x4_t a = vmulq_f32(vcvtq_u32_f32(vmovl_u16(vget_high_u16(vmovl_u8(vld1_u8(&c.r))))), vdupq_n_f32(1.0f/255.0f));
+#ifdef __ARM_NEON__
+		uint32_t col=vertex[index].color;
+		col=(col&0xFF00FF00)|((col&0x00FF0000)>>16)|((col&0x000000FF)<<16);
+		float32x4_t a = vmulq_n_f32(vcvtq_f32_u32(vmovl_u16(vget_low_u16(vmovl_u8(vreinterpret_u8_u32(vdup_n_u32(col)))))), 1.0f/255.0f);
 		vst1q_f32(&vertex[index].colorf[0], a);
 #else
+		Color c = Color::fromBGRA(vertex[index].color);
 		vertex[index].colorf[0] = (float)c.r*(1.0f/255.0f);
 		vertex[index].colorf[1] = (float)c.g*(1.0f/255.0f);
 		vertex[index].colorf[2] = (float)c.b*(1.0f/255.0f);	
@@ -236,7 +242,7 @@ public:
 	}
 	
 	Vertex * lock(BufferFlags flags, size_t offset, size_t count) {
-		ARX_UNUSED(flags);
+		ARX_UNUSED(flags), ARX_UNUSED(count);
 		return buffer + offset;
 	}
 	

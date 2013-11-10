@@ -71,10 +71,8 @@ enum GLTransformMode {
 
 static GLTransformMode currentTransform;
 
+#ifndef HAVE_GLES
 static bool checkShader(GLuint object, const char * op, GLuint check) {
-#ifdef HAVE_GLES
-	return false;
-#else
 	GLint status;
 	glGetObjectParameterivARB(object, check, &status);
 	if(!status) {
@@ -87,11 +85,9 @@ static bool checkShader(GLuint object, const char * op, GLuint check) {
 		return false;
 	}
 	return true;
-#endif
 }
 
 static GLuint loadVertexShader(const char * source) {
-#ifndef HAVE_GLES
 	GLuint shader = glCreateProgramObjectARB();
 	if(!shader) {
 		LogWarning << "Failed to create program object";
@@ -123,10 +119,8 @@ static GLuint loadVertexShader(const char * source) {
 	}
 	
 	return shader;
-#else
-	return 0;
-#endif
 }
+#endif
 
 void OpenGLRenderer::Initialize() {
 #ifndef HAVE_GLES
@@ -689,7 +683,6 @@ void OpenGLRenderer::drawIndexed(Primitive primitive, const TexturedVertex * ver
 }
 
 bool OpenGLRenderer::getSnapshot(Image & image) {
-	
 	Vec2i size = mainApp->getWindow()->getSize();
 
 #ifdef HAVE_GLES
