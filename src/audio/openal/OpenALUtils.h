@@ -47,4 +47,10 @@ inline bool isallfinite(Vector3<T> vec) {
 	return (boost::math::isfinite)(vec.x) && (boost::math::isfinite)(vec.y)  && (boost::math::isfinite)(vec.z);
 }
 
+#ifdef __ARM_NEON__
+inline bool isallfinite(Vec3f vec) {	//*SEB* *TODO* there must be some NEON magic to do that?!
+	return (boost::math::isfinite)(vec.x) && (boost::math::isfinite)(vec.y)  && (boost::math::isfinite)(vec.z);
+}
+#endif
+
 #endif // ARX_AUDIO_OPENAL_OPENALUTILS_H
