@@ -73,6 +73,9 @@ void Image::Reset() {
 	mNumMipmaps = 0;
 	mFormat = Format_Unknown;
 	mDataSize = 0;
+#ifdef HAVE_GLES
+	downScaled=false;
+#endif
 }
 
 const Image& Image::operator=(const Image & pOther) {
@@ -91,6 +94,9 @@ const Image& Image::operator=(const Image & pOther) {
 	mFormat     = pOther.mFormat;
 	mDataSize   = pOther.mDataSize;
 	mData       = new unsigned char[mDataSize];
+#ifdef HAVE_GLES
+	downScaled	= pOther.downScaled;
+#endif
 	
 	memcpy(mData, pOther.mData, mDataSize);
 	
@@ -303,6 +309,10 @@ bool Image::DownScale() {
 	arx_assert_msg( !IsVolume(), "[Image::DownScale] DownScaling of volume images not supported yet!" );
 //	arx_assert_msg( GetWidth() > 16, "[Image::DownScale] DownScaling of small images not supported" );
 //	arx_assert_msg( GetHeight() > 16, "[Image::DownScale] DownScaling of small images not supported" );
+#ifdef HAVE_GLES
+	if (downScaled)
+		return false;
+#endif
 	if(IsCompressed() || IsVolume() || (GetWidth() < 17) || (GetHeight() < 17))
 		return false;
 
@@ -327,6 +337,10 @@ bool Image::DownScale() {
 	memcpy(GetData(), p, dataSize);
 	
 	delete[] p;
+	
+#ifdef HAVE_GLES
+	downScaled = true;
+#endif
 		
 	return true;
 }
@@ -346,7 +360,6 @@ bool Image::RemoveAlpha() {
 	
 	p = new unsigned char[dataSize];
 	s = GetData();
-	unsigned int aa;
 	for (unsigned int y=0; y<mHeight; y++)
 		for (unsigned int x=0; x<mWidth; x++)
 			for (unsigned int a=0; a<nChan; a++) {

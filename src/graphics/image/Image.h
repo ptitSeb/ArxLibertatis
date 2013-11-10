@@ -48,6 +48,9 @@ public:
 	Image();
 	Image(const Image & pOther);
 	virtual ~Image();
+#ifdef HAVE_GLES
+	bool downScaled;
+#endif
 	
 	const Image& operator=(const Image & pOther);
 	

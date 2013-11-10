@@ -59,7 +59,6 @@ bool GLTexture2D::Create() {
 }
 
 void GLTexture2D::Upload() {
-	
 	arx_assert(tex != GL_NONE);
 	
 	glBindTexture(GL_TEXTURE_2D, tex);
@@ -103,19 +102,30 @@ void GLTexture2D::Upload() {
 		arx_assert_msg(false, "Unsupported image format");
 		return;
 	}
+	
+#if 0
+printf("GLTexture2D::Upload (%ix%i), Mipmaps=%s, Format=%s\n", size.x, size.y, 
+   (hasMipmaps())?"yes":"no",
+   (format==GL_LUMINANCE)?"GL_L":(format==GL_ALPHA)?"GL_A":(format==GL_LUMINANCE_ALPHA)?"GL_LA":(format==GL_RGB)?"GL_RGB":"GL_RGBA"
+   );	
+#endif
+
+#ifdef PANDORA0
+	if(hasMipmaps() && ((format==GL_RGB) || (format==GL_RGBA))) {
+		// more Gamma on the Pandora
+		mImage.QuakeGamma(1.6);
+	};
+#endif
 
 #ifdef HAVE_GLES
-	if(hasMipmaps() && ((size.x>32) || (size.y>32))) 
-	{
+	if(hasMipmaps() && ((size.x>32) || (size.y>32))) {
 		// downscale this texture !
 		if (mImage.DownScale()) {
 			size.x = mImage.GetWidth();
 			size.y = mImage.GetHeight();
 			storedSize = Vec2i(GetNextPowerOf2(size.x), GetNextPowerOf2(size.y));
 		}
-		
 	}
-
 #endif
 	
 	if(hasMipmaps()) 
@@ -130,8 +140,8 @@ void GLTexture2D::Upload() {
 		unsigned char *temp = new unsigned char[mImage.GetWidth()*mImage.GetHeight()*2];
 		unsigned short *p = (unsigned short*)temp;
 		unsigned char *s = mImage.GetData();
-		for (int y=0; y<mImage.GetHeight(); y++)
-			for (int x=0; x<mImage.GetWidth(); x++) {
+		for (unsigned int y=0; y<mImage.GetHeight(); y++)
+			for (unsigned int x=0; x<mImage.GetWidth(); x++) {
 				unsigned short r = s[0]>>3, g = s[1]>>2, b = s[2]>>3;
 				*(p++) = r<<11 | g<<5 | b;
 				s+=3;
@@ -149,8 +159,8 @@ void GLTexture2D::Upload() {
 		unsigned char *temp = new unsigned char[mImage.GetWidth()*mImage.GetHeight()*2];
 		unsigned short *p = (unsigned short*)temp;
 		unsigned char *s = mImage.GetData();
-		for (int y=0; y<mImage.GetHeight(); y++)
-			for (int x=0; x<mImage.GetWidth(); x++) {
+		for (unsigned int y=0; y<mImage.GetHeight(); y++)
+			for (unsigned int x=0; x<mImage.GetWidth(); x++) {
 				unsigned short r = s[0]>>4, g = s[1]>>4, b = s[2]>>4, a = s[3]>>4;
 				*(p++) = r<<12 | g<<8 | b<<4 | a;
 				s+=4;
