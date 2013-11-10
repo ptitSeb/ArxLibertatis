@@ -552,26 +552,36 @@ EERIE_QUAT Quat_Multiply(const EERIE_QUAT & q1, const EERIE_QUAT & q2)
 	additions/subtractions. Generally, this is still an improvement.
 	  */
 #ifdef __ARM_NEON__
-	float32x2_t q1xy =  vld1_f32(&q1.x);
-	float32x2_t q1zx = {q1.z, q1.x};
-	float32x2_t q1yz =  vld1_f32(&q1.y);
-	float32x2_t q2wx = {q2.w, -q2.x};
-	float32x2_t q2zx = {q2.z, q2.x};
-	float32x2_t q2yy = {q2.y, -q2.y};
-	float32x2_t q2yz = vld1_f32(&q2.y);
-	float32x2_t q2xz = vrev64_f32(q2zx);
-	float32x4_t t1 = vmlsq_f32(vmulq_f32(vdupq_n_f32(q1.w), vld1q_f32(&q2.x)),
-        			vcombine_f32(q1zx, q1yz), 
-				vcombine_f32(q2yz, q2xz));
-        float32x4_t t2 = vmulq_f32(vcombine_f32(q1xy, q1zx), 
-				vcombine_f32(vdup_n_f32(q2.w), q2wx));
-        float32x4_t t3 = vmulq_f32(vcombine_f32(q1yz, q1xy), 
-				vcombine_f32(q2zx, q2yy));
-	t1 = vaddq_f32(t1, vaddq_f32(t2,t3));
-	
+	EERIE_QUAT res;
+	// code adapted from SSE code from Eigen Quaternion
+	uint32x2_t	mask = {0x80000000,0x0};	// trick to change sign of 1 element only
+	float32x2_t b_xy = vld1_f32(&q2.x);
+	float32x2_t b_zw = vld1_f32(&q2.z);
+	float32x2_t a_xx = vdup_n_f32(q1.x);
+	float32x2_t a_yy = vdup_n_f32(q1.y);
+	float32x2_t a_zz = vdup_n_f32(q1.z);
+	float32x2_t a_ww = vdup_n_f32(q1.w);
 
-	return EERIE_QUAT(t1[0], t1[1], t1[2], t1[3]);
+	// two temporaries:
+	float32x2_t t1, t2;
+	/*
+	 * t1 = ww*xy + yy*zw
+	 * t2 = zz*xy - xx*zw
+	 * res.xy = t1 +/- swap(t2)
+	*/
+	t1 = vmla_f32(vmul_f32(a_ww, b_xy), a_yy, b_zw);
+	t2 = vmls_f32(vmul_f32(a_zz, b_xy), a_xx, b_zw);
+	vst1_f32(&res.x, vadd_f32(t1, vreinterpret_f32_u32 (veor_u32(mask,vreinterpret_u32_f32(vrev64_f32(t2))))));
+	/*
+	 * t1 = ww*zw - yy*xy
+	 * t2 = zz*zw + xx*xy
+	 * res.zw = t1 -/+ swap(t2)
+	 */
+	t1 = vmls_f32(vmul_f32(a_ww, b_zw), a_yy, b_xy);
+	t2 = vmla_f32(vmul_f32(a_zz, b_zw), a_xx, b_xy);
+	vst1_f32(&res.z, vsub_f32(t1, vreinterpret_f32_u32 (veor_u32(mask,vreinterpret_u32_f32(vrev64_f32(t2))))));
 
+	return res;
 #else
 
 	return EERIE_QUAT(
@@ -588,24 +598,33 @@ EERIE_QUAT Quat_Multiply(const EERIE_QUAT & q1, const EERIE_QUAT & q2)
 void Quat_Divide(EERIE_QUAT * dest, const EERIE_QUAT * q1, const EERIE_QUAT * q2)
 {
 #ifdef __ARM_NEON__
-	float32x2_t q1xy =  vld1_f32(&q1->x);
-	float32x2_t q1zx = {q1->z, q1->x};
-	float32x2_t q1yz =  vld1_f32(&q1->y);
-	float32x2_t q2wx = {q2->w, -q2->x};
-	float32x2_t q2zx = {q2->z, q2->x};
-	float32x2_t q2yy = {q2->y, -q2->y};
-	float32x2_t q2yz = vld1_f32(&q2->y);
-	float32x2_t q2xz = vrev64_f32(q2zx);
-	float32x4_t t1 = vmlaq_f32(vmulq_f32(vdupq_n_f32(q1->w), vld1q_f32(&q2->x)),
-        			vcombine_f32(q1zx, q1yz), 
-				vcombine_f32(q2yz, q2xz));
-        float32x4_t t2 = vmulq_f32(vcombine_f32(q1xy, q1zx), 
-				vcombine_f32(vdup_n_f32(q2->w), q2wx));
-        float32x4_t t3 = vmulq_f32(vcombine_f32(q1yz, q1xy), 
-				vcombine_f32(q2zx, q2yy));
-	t1 = vsubq_f32(t1, vaddq_f32(t2,t3));
-	
-	vst1q_f32(&dest->x, t1);
+	// code adapted from SSE code from Eigen Quaternion
+	uint32x2_t	mask = {0x80000000,0x0};	// trick to change sign of 1 element only
+	float32x2_t b_xy = vld1_f32(&q2->x);
+	float32x2_t b_zw = vld1_f32(&q2->z);
+	float32x2_t a_xx = vdup_n_f32(q1->x);
+	float32x2_t a_yy = vdup_n_f32(q1->y);
+	float32x2_t a_zz = vdup_n_f32(q1->z);
+	float32x2_t a_ww = vdup_n_f32(q1->w);
+
+	// two temporaries:
+	float32x2_t t1, t2;
+	/*
+	 * t1 = ww*xy - yy*zw
+	 * t2 = zz*xy - xx*zw
+	 * res.xy = t1 -/+ swap(t2)
+	*/
+	t1 = vmls_f32(vmul_f32(a_ww, b_xy), a_yy, b_zw);
+	t2 = vmls_f32(vmul_f32(a_zz, b_xy), a_xx, b_zw);
+	vst1_f32(&dest->x, vsub_f32(t1, vreinterpret_f32_u32 (veor_u32(mask,vreinterpret_u32_f32(vrev64_f32(t2))))));
+	/*
+	 * t1 = ww*zw + yy*xy
+	 * t2 = zz*zw + xx*xy
+	 * res.zw = t1 +/- swap(t2)
+	 */
+	t1 = vmla_f32(vmul_f32(a_ww, b_zw), a_yy, b_xy);
+	t2 = vmla_f32(vmul_f32(a_zz, b_zw), a_xx, b_xy);
+	vst1_f32(&dest->z, vadd_f32(t1, vreinterpret_f32_u32 (veor_u32(mask,vreinterpret_u32_f32(vrev64_f32(t2))))));
 
 #else
 	dest->x = q1->w * q2->x - q1->x * q2->w - q1->y * q2->z + q1->z * q2->y;
@@ -621,7 +640,40 @@ void TransformInverseVertexQuat(const EERIE_QUAT * quat, const Vec3f * vertexin,
 	
 	EERIE_QUAT rev_quat = *quat;
 	Quat_Reverse(&rev_quat);
+#ifdef __ARM_NEON__
+	float32x2_t xy = vertexin->xy;
+	float32x2_t zx = vrev64_f32(vset_lane_f32(vertexin->z, xy, 1));
+	float32x2_t yz = vrev64_f32(vset_lane_f32(vertexin->y, zx, 1));
 	
+	float32x2_t qww = vdup_n_f32(rev_quat.w);
+	float32x2_t qxy = vld1_f32(&rev_quat.x);
+	float32x2_t qwx = vset_lane_f32(rev_quat.x, qww, 1);
+	float32x2_t qyy = vdup_n_f32(vget_lane_f32(qxy, 1));
+	float32x2_t qyz = vset_lane_f32(rev_quat.z, qyy, 1);
+	float32x2_t qzx = vset_lane_f32(vget_lane_f32(qyz, 1), qwx, 0);
+
+	uint32x2_t	mask = {0x0, 0x80000000};	// trick to change sign of 1 element only
+	
+	float32x2_t rxy, rzw, rzx;
+	
+	rxy = vmla_f32(vmls_f32(vmul_f32(xy, qww), yz, qzx), zx, qyz);
+	rzw = vmla_f32(vmls_f32(vmul_f32(zx, qwx), vreinterpret_f32_u32 (veor_u32(mask,vreinterpret_u32_f32(xy))), qyy), yz, vrev64_f32(qzx));
+	rzx = vset_lane_f32(vget_lane_f32(rxy, 0), rzw, 1);
+	
+	vertexout->xy= vadd_f32(
+		vmla_f32(vmul_f32(qww, rxy), qxy, vdup_n_f32(vget_lane_f32(rzw, 1))), 
+		vmls_f32(vmul_f32(qyz, rzx), qzx, vset_lane_f32(vget_lane_f32(rzw, 0), vrev64_f32(rxy), 1)) );
+	
+	float32x2_t z = vmla_f32(
+		vmul_f32(qwx, vset_lane_f32(vget_lane_f32(rxy, 1),rzx, 1)),
+		vreinterpret_f32_u32 (veor_u32(mask,vreinterpret_u32_f32(vrev64_f32(qyz)))),
+		vrev64_f32(vset_lane_f32(vget_lane_f32(rzw, 1), rxy, 1)) );
+	vertexout->z0 = vset_lane_f32(0.0f, vpadd_f32(z, z), 1);
+	
+/*	vertexout->z = vget_lane_f32( vadd_f32(
+		vmla_f32(vmul_f32(qwx, rzx), qzx, vrev64_f32(rzw)), 
+		vmls_f32(vrev64_f32(vmul_f32(qzx, rxy)), qyy, rxy) ), 0);*/
+#else	
 	float x = vertexin->x;
 	float y = vertexin->y;
 	float z = vertexin->z;
@@ -639,11 +691,47 @@ void TransformInverseVertexQuat(const EERIE_QUAT * quat, const Vec3f * vertexin,
 	vertexout->x = qw * rx + qx * rw + qy * rz - qz * ry;
 	vertexout->y = qw * ry + qy * rw + qz * rx - qx * rz;
 	vertexout->z = qw * rz + qz * rw + qx * ry - qy * rx;
+#endif
 }
 
 
 EERIE_QUAT Quat_Slerp(const EERIE_QUAT & from, EERIE_QUAT to, float ratio)
 {
+#ifdef __ARM_NEON__0
+// this code doesn't compile on my unstable gcc 4.9.0... To be reactivate later when I'll upgrade my compiler
+	EERIE_QUAT res;
+	
+	float32x2_t toxy = vld1_f32(&to.x);
+	float32x2_t tozw = vld1_f32(&to.z);
+	float32x2_t fromzw = vld1_f32(&from.z);
+	float32x2_t fromxy = vld1_f32(&from.x);
+	
+	float32x2_t fCosTheta = vmla_f32(vmul_f32(fromxy, toxy), fromzw, tozw);
+	fCosTheta = vpadd_f32(fCosTheta, fCosTheta);
+	
+	uint32x2_t res_if = vcle_f32(fCosTheta, vdup_n_f32(0));
+	
+	if (vget_lane_u32(res_if, 0)) {
+		fCosTheta = vneg_f32(fCosTheta);
+		toxy = vneg_f32(toxy);
+		tozw = vneg_f32(tozw);
+	}
+
+	float fBeta = 1.f - ratio;
+	
+	res_if = vcle_f32(fCosTheta, vdup_n_f32(1.0f-0.001f));
+	if (vget_lane_u32(res_if, 0)) {
+		float fTheta = acos(vget_lane_f32(fCosTheta, 0));
+		float t = 1 / EEsin(fTheta);
+		fBeta  = EEsin(fTheta * fBeta) * t ;
+		ratio = EEsin(fTheta * ratio) * t ;
+	}
+	
+	vst1_f32(&res.x, vmla_n_f32(vmul_n_f32(fromxy, fBeta), toxy, ratio));
+	vst1_f32(&res.z, vmla_n_f32(vmul_n_f32(fromzw, fBeta), tozw, ratio));
+	
+	return res;
+#else
 	float fCosTheta = from.x * to.x + from.y * to.y + from.z * to.z + from.w * to.w;
 
 	if (fCosTheta < 0.0f)
@@ -659,7 +747,7 @@ EERIE_QUAT Quat_Slerp(const EERIE_QUAT & from, EERIE_QUAT to, float ratio)
 
 	if (1.0f - fCosTheta > 0.001f)
 	{
-		float fTheta = acosf(fCosTheta);
+		float fTheta = acos(fCosTheta);
 		float t = 1 / EEsin(fTheta);
 		fBeta  = EEsin(fTheta * fBeta) * t ;
 		ratio = EEsin(fTheta * ratio) * t ;
@@ -670,6 +758,7 @@ EERIE_QUAT Quat_Slerp(const EERIE_QUAT & from, EERIE_QUAT to, float ratio)
 		fBeta * from.y + ratio * to.y,
 		fBeta * from.z + ratio * to.z,
 		fBeta * from.w + ratio * to.w);
+#endif
 }
 
 
@@ -696,13 +785,13 @@ void QuatFromAngles(EERIE_QUAT * q, const Anglef * angle)
 	A = angle->yaw * ( 1.0f / 2 );
 	B = angle->pitch * ( 1.0f / 2 );
 
-	float fSinYaw   = sinf(A);
-	float fCosYaw   = cosf(A);
-	float fSinPitch = sinf(B);
-	float fCosPitch = cosf(B);
+	float fSinYaw   = sin(A);
+	float fCosYaw   = cos(A);
+	float fSinPitch = sin(B);
+	float fCosPitch = cos(B);
 	A = angle->roll * ( 1.0f / 2 );
-	float fSinRoll  = sinf(A);
-	float fCosRoll  = cosf(A);
+	float fSinRoll  = sin(A);
+	float fCosRoll  = cos(A);
 	A = fCosRoll * fCosPitch;
 	B = fSinRoll * fSinPitch;
 	q->x = fSinRoll * fCosPitch * fCosYaw - fCosRoll * fSinPitch * fSinYaw;
@@ -826,7 +915,7 @@ void QuatFromMatrix(EERIE_QUAT & quat, EERIEMATRIX & mat)
 		int j = nxt[i];
 		int k = nxt[j];
 
-		s = sqrtf((m[i][i] - (m[j][j] + m[k][k])) + 1.0f);
+		s = sqrt((m[i][i] - (m[j][j] + m[k][k])) + 1.0f);
 
 		q[i] = s * 0.5f;
 

@@ -178,7 +178,7 @@ inline Anglef interpolate(const Anglef & a1, const Anglef & a2, float p) {
 
 //! Get the angle of the 2D vector (0,0)--(x,y), in radians.
 inline float getAngle(float x, float y) {
-	float angle = PI * 1.5f + std::atan2(y, x);
+	float angle = PI * 1.5f + atan2(y, x);
 	return (angle >= 0) ? angle : angle + 2 * PI;
 }
 

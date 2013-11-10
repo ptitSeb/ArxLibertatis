@@ -37,13 +37,21 @@ template <class T>
 class Vector2;
 typedef Vector2<s32> Vec2i;
 typedef Vector2<short> Vec2s;
+#ifdef __ARM_NEON__
+class Vec2f;
+#else
 typedef Vector2<float> Vec2f;
+#endif
 typedef Vector2<double> Vec2d;
 
 template <class T>
 class Vector3;
 typedef Vector3<s32> Vec3i;
+#ifdef __ARM_NEON__
+class Vec3f;
+#else
 typedef Vector3<float> Vec3f;
+#endif
 typedef Vector3<double> Vec3d;
 
 // Math constants

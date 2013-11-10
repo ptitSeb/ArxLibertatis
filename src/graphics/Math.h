@@ -81,15 +81,9 @@ inline Vec3f randomVec(float min = 0.f, float max = 1.f) {
 }
 
 //Approximative Methods
-#ifdef HAVE_GLES
-#define EEcos(val)  (float)cosf((float)val)
-#define EEsin(val)  (float)sinf((float)val)
-#define EEfabs(val) (float)fabsf(val)
-#else
 #define EEcos(val)  (float)cos((float)val)
 #define EEsin(val)  (float)sin((float)val)
 #define EEfabs(val) (float)fabs(val)
-#endif
 
 inline bool In3DBBoxTolerance(const Vec3f * pos, const EERIE_3D_BBOX * bbox, const float tolerance) {
 	return ((pos->x >= bbox->min.x - tolerance)
@@ -173,7 +167,7 @@ inline float ffrecip(float f)
 
 /*!
  * Obtain the approximated inverse of the square root of a float.
- * @brief  This code compute a fast 1 / sqrtf(v) approximation.
+ * @brief  This code compute a fast 1 / sqrt(v) approximation.
  * @note   Originaly from Matthew Jones (Infogrames).
  * @param  pValue  a float, the number we want the square root.
  * @return The square root of \a fValue, as a float.

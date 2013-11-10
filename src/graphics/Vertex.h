@@ -90,18 +90,18 @@ struct SMY_VERTEX {
 	Vec3f p __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
 	ColorBGRA color;
 #ifdef HAVE_GLES
-	float colorf[4];
+	float colorf[4] __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
 #endif
-	Vec2f uv;
+	Vec2f uv __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
 };
 
 struct SMY_VERTEX3 {
 	Vec3f p __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
 	ColorBGRA color;
 #ifdef HAVE_GLES
-	float colorf[4];
+	float colorf[4] __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
 #endif
-	Vec2f uv[3];
+	Vec2f uv[3] __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
 };
 
 struct EERIE_VERTEX {

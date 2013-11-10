@@ -41,7 +41,11 @@ public:
 		operator Vector2<T>() {
 			return Vector2<T>(x, y);
 		}
-		
+#ifdef __ARM_NEON__
+		operator Vec2f() {
+			return Vec2f(x, y);
+		}
+#endif		
 		DummyVec2 & operator=(const Vector2<T> & vec) {
 			x = vec.x, y = vec.y;
 			return *this;
@@ -77,6 +81,10 @@ public:
 	Rectangle_(const Vector2<T> & _origin, T width = T(0), T height = T(0)) : left(_origin.x), top(_origin.y), right(_origin.x + width), bottom(_origin.y + height) { }
 	
 	Rectangle_(const Vector2<T> & _origin, const Vector2<T> & _end) : left(_origin.x), top(_origin.y), right(_end.x), bottom(_end.y) { }
+#ifdef __ARM_NEON__
+	Rectangle_(const Vec2f & _origin, T width = T(0), T height = T(0)) : left(_origin.x), top(_origin.y), right(_origin.x + width), bottom(_origin.y + height) { }
+	Rectangle_(const Vec2f & _origin, const Vec2f & _end) : left(_origin.x), top(_origin.y), right(_end.x), bottom(_end.y) { }
+#endif
 	
 	Rectangle_(T width, T height) : left(T(0)), top(T(0)), right(width), bottom(height) { }
 	
@@ -105,6 +113,16 @@ public:
 		origin += offset, end += offset;
 		return *this;
 	}
+#ifdef __ARM_NEON__
+	Rectangle_ operator+(const Vec2f & offset) const {
+		return Rectangle_(origin + offset, end + offset);
+	}
+	
+	Rectangle_ & operator+=(const Vec2f & offset) {
+		origin += offset, end += offset;
+		return *this;
+	}
+#endif
 	
 	void move(T dx, T dy) {
 		left += dx, top += dy, right += dx, bottom += dy;
@@ -113,7 +131,11 @@ public:
 	bool contains(const Vector2<T> & point) const {
 		return (point.x >= left && point.x < right && point.y >= top && point.y < bottom);
 	}
-	
+#ifdef __ARM_NEON__
+	bool contains(const Vec2f & point) const {
+		return (point.x >= left && point.x < right && point.y >= top && point.y < bottom);
+	}
+#endif	
 	bool contains(T x, T y) const {
 		return (x >= left && x < right && y >= top && y < bottom);
 	}
