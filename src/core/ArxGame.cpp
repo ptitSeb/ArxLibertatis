@@ -1246,7 +1246,7 @@ void ArxGame::updateInput() {
 	// Update input
 	GInput->update();
 	ReMappDanaeButton();
-	AdjustMousePosition();
+	AdjustMousePosition(); //*SEB* alter this to make Touchscreen more usable (for Spell mainly)
 
 	if(GInput->actionNowPressed(CONTROLS_CUST_TOGGLE_FULLSCREEN)) {
 		setFullscreen(!getWindow()->isFullScreen());
@@ -1778,7 +1778,10 @@ void ArxGame::render() {
 			renderLevel();
 #endif
 	}
-	
+
+	//*SEB* Temporary hack to have fps on screen
+//	CalcFPS();
+//	ShowFPS();
 	if(showInfo != InfoPanelNone) {
 		GRenderer->BeginScene();
 		switch(showInfo) {
