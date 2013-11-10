@@ -65,10 +65,11 @@ const int
 	bpp = 16,
 #ifdef PANDORA
 	levelOfDetail = 0,
+	fogDistance = 10,
 #else
 	levelOfDetail = 2,
-#endif
 	fogDistance = 10,
+#endif
 	volume = 10,
 	sfxVolume = 10,
 	speechVolume = 10,
