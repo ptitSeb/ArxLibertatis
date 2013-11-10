@@ -41,6 +41,9 @@ public:
 	// Keyboard
 	virtual bool isKeyboardKeyPressed(int keyId) const = 0;
 	virtual bool getKeyAsText(int keyId, char& result) const = 0;
+	
+	// Joystick
+	virtual float getAxis(int axisId) const = 0;
 };
 
 #endif // ARX_INPUT_INPUTBACKEND_H

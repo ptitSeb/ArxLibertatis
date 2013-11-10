@@ -2254,7 +2254,7 @@ void ArxGame::managePlayerControls()
 			Vec3f old = eyeball.pos;
 
 			// Checks WALK_FORWARD Key Status.
-			if(GInput->actionPressed(CONTROLS_CUST_WALKFORWARD)) {
+			if(GInput->actionPressed(CONTROLS_CUST_WALKFORWARD) || GInput->joyUp()) {
 				float tr=radians(eyeball.angle.b);
 				eyeball.pos.x+=-(float)EEsin(tr)*20.f*(float)FD*0.033f;
 				eyeball.pos.z+=+(float)EEcos(tr)*20.f*(float)FD*0.033f;
@@ -2262,7 +2262,7 @@ void ArxGame::managePlayerControls()
 			}
 
 			// Checks WALK_BACKWARD Key Status.
-			if(GInput->actionPressed(CONTROLS_CUST_WALKBACKWARD)) {
+			if(GInput->actionPressed(CONTROLS_CUST_WALKBACKWARD) || GInput->joyDown()) {
 				float tr=radians(eyeball.angle.b);
 				eyeball.pos.x+=(float)EEsin(tr)*20.f*(float)FD*0.033f;
 				eyeball.pos.z+=-(float)EEcos(tr)*20.f*(float)FD*0.033f;
@@ -2271,7 +2271,8 @@ void ArxGame::managePlayerControls()
 
 			// Checks STRAFE_LEFT Key Status.
 			if( (GInput->actionPressed(CONTROLS_CUST_STRAFELEFT)||
-				(GInput->actionPressed(CONTROLS_CUST_STRAFE)&&GInput->actionPressed(CONTROLS_CUST_TURNLEFT)))
+				(GInput->actionPressed(CONTROLS_CUST_STRAFE)&&GInput->actionPressed(CONTROLS_CUST_TURNLEFT))
+				 || GInput->joyLeft())
 				&& !NOMOREMOVES)
 			{
 				float tr=radians(MAKEANGLE(eyeball.angle.b+90.f));
@@ -2282,7 +2283,8 @@ void ArxGame::managePlayerControls()
 
 			// Checks STRAFE_RIGHT Key Status.
 			if( (GInput->actionPressed(CONTROLS_CUST_STRAFERIGHT)||
-				(GInput->actionPressed(CONTROLS_CUST_STRAFE)&&GInput->actionPressed(CONTROLS_CUST_TURNRIGHT)))
+				(GInput->actionPressed(CONTROLS_CUST_STRAFE)&&GInput->actionPressed(CONTROLS_CUST_TURNRIGHT))
+				 || GInput->joyRight())
 				&& !NOMOREMOVES)
 			{
 				float tr=radians(MAKEANGLE(eyeball.angle.b-90.f));
@@ -2323,7 +2325,7 @@ void ArxGame::managePlayerControls()
 		if(arxtime.is_paused())
 			FD = 40.f;
 
-		bool left=GInput->actionPressed(CONTROLS_CUST_STRAFELEFT);
+		bool left=GInput->actionPressed(CONTROLS_CUST_STRAFELEFT)||GInput->joyLeft();
 
 		if(!left) {
 			if(GInput->actionPressed(CONTROLS_CUST_STRAFE)&&GInput->actionPressed(CONTROLS_CUST_TURNLEFT)) {
@@ -2331,7 +2333,7 @@ void ArxGame::managePlayerControls()
 			}
 		}
 
-		bool right=GInput->actionPressed(CONTROLS_CUST_STRAFERIGHT);
+		bool right=GInput->actionPressed(CONTROLS_CUST_STRAFERIGHT)||GInput->joyRight();
 
 		if(!right) {
 			if(GInput->actionPressed(CONTROLS_CUST_STRAFE)&&GInput->actionPressed(CONTROLS_CUST_TURNRIGHT)) {
@@ -2340,12 +2342,16 @@ void ArxGame::managePlayerControls()
 		}
 
 		// Checks WALK_BACKWARD Key Status.
-		if(GInput->actionPressed(CONTROLS_CUST_WALKBACKWARD) && !NOMOREMOVES) {
+		if((GInput->actionPressed(CONTROLS_CUST_WALKBACKWARD) || GInput->joyMovDown()!=0.0f) && !NOMOREMOVES) {
 			CurrFightPos=3;
 			float multi = 1;
 
+			if (!GInput->actionPressed(CONTROLS_CUST_WALKBACKWARD))	//Joystick ?
+				multi = GInput->joyMovDown();
+			
+			
 			if(left || right) {
-				multi = 0.8f;
+				multi *= 0.8f;
 			}
 
 			float t = radians(player.angle.b);
@@ -2367,12 +2373,15 @@ void ArxGame::managePlayerControls()
 			MOVE_PRECEDENCE = 0;
 
 		// Checks WALK_FORWARD Key Status.
-		if(GInput->actionPressed(CONTROLS_CUST_WALKFORWARD) && !NOMOREMOVES) {
+		if((GInput->actionPressed(CONTROLS_CUST_WALKFORWARD) || GInput->joyMovUp()!=0.0f) && !NOMOREMOVES) {
 			CurrFightPos=2;
 			float multi = 1;
 
+			if (!GInput->actionPressed(CONTROLS_CUST_WALKFORWARD))	//Joystick ?
+				multi = GInput->joyMovUp();
+			
 			if(left || right) {
-				multi=0.8f;
+				multi *= 0.8f;
 			}
 
 			float t = radians(player.angle.b);
@@ -2394,10 +2403,12 @@ void ArxGame::managePlayerControls()
 			MOVE_PRECEDENCE = 0;
 
 		// Checks STRAFE_LEFT Key Status.
-		if(left && !NOMOREMOVES) {
+		if((left || GInput->joyMovLeft()!=0.0f) && !NOMOREMOVES) {
 			CurrFightPos=0;
 			float t = radians(MAKEANGLE(player.angle.b+90.f));
 			float multi=6.f*(float)FD*MoveDiv;
+			if (GInput->joyMovLeft()!=0.0f)
+				multi*=GInput->joyMovLeft();
 			tm.x-=(float)EEsin(t)*multi;
 			tm.z+=(float)EEcos(t)*multi;
 
@@ -2410,10 +2421,12 @@ void ArxGame::managePlayerControls()
 			MOVE_PRECEDENCE = 0;
 
 		// Checks STRAFE_RIGHT Key Status.
-		if(right && !NOMOREMOVES) {
+		if((right || GInput->joyMovRight()!=0.0f) && !NOMOREMOVES) {
 			CurrFightPos=1;
 			float t = radians(MAKEANGLE(player.angle.b-90.f));
 			float multi=6.f*(float)FD*MoveDiv;
+			if (GInput->joyMovRight()!=0.0f)
+				multi*=GInput->joyMovRight();
 			tm.x-=(float)EEsin(t)*multi;
 			tm.z+=(float)EEcos(t)*multi;
 

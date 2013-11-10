@@ -31,13 +31,15 @@
 #define SDL_BUTTON_X2 7
 #endif
 
-SDLInputBackend::SDLInputBackend() { }
+SDLInputBackend::SDLInputBackend() { joystick = 0; }
 
 SDLInputBackend::~SDLInputBackend() {
 	
 	if(SDLWindow::mainWindow && SDLWindow::mainWindow->input == this) {
 		SDLWindow::mainWindow->input = NULL;
 	}
+	if (joystick)
+		SDL_JoystickClose(joystick);
 }
 
 static int sdlToArxKey[SDLK_LAST];
@@ -54,6 +56,11 @@ bool SDLInputBackend::init() {
 	cursorInWindow = false;
 	
 	SDLWindow::mainWindow->input = this;
+	
+	if (SDL_NumJoysticks()>0) 
+		joystick = SDL_JoystickOpen(0);
+	else
+		joystick = 0;
 	
 	SDL_EventState(SDL_KEYDOWN, SDL_ENABLE);
 	SDL_EventState(SDL_KEYUP, SDL_ENABLE);
@@ -233,6 +240,10 @@ bool SDLInputBackend::init() {
 	std::fill_n(buttonStates, ARRAY_SIZE(buttonStates), false);
 	std::fill_n(clickCount, ARRAY_SIZE(clickCount), 0);
 	std::fill_n(unclickCount, ARRAY_SIZE(unclickCount), 0);
+	
+	//Joystick
+	joyX = 0.0f;
+	joyY = 0.0f;
 	
 	LogInfo << "Using SDL input";
 	
@@ -446,6 +457,17 @@ bool SDLInputBackend::getKeyAsText(int keyId, char & result) const {
 	return false;
 }
 
+float SDLInputBackend::getAxis(int axisId) const {
+	switch (axisId) {
+		case 0 :
+			return joyX;
+		case 1 :
+			return joyY;
+	}
+	return 0.0f;
+}
+
+
 void SDLInputBackend::onInputEvent(const SDL_Event & event) {
 	
 	switch(event.type) {
@@ -464,14 +486,14 @@ void SDLInputBackend::onInputEvent(const SDL_Event & event) {
 			SDLKey key = event.key.keysym.sym;
 #ifdef PANDORA
 			// right shoulder (right shift) = left click, left shoulder (right control) = right click
-			if (key==SDLK_RCTRL) {
+			if (key==SDLK_RSHIFT) {
 				size_t i = sdlToArxButton[SDL_BUTTON_RIGHT] - Mouse::ButtonBase;
 				if((event.type == SDL_KEYDOWN)) {
 					buttonStates[i] = true, clickCount[i]++;
 				} else {
 					buttonStates[i] = false, unclickCount[i]++;
 				}
-			} else if (key==SDLK_RSHIFT) {
+			} else if (key==SDLK_RCTRL) {
 				size_t i = sdlToArxButton[SDL_BUTTON_LEFT] - Mouse::ButtonBase;
 				if((event.type == SDL_KEYDOWN)) {
 					buttonStates[i] = true, clickCount[i]++;
@@ -514,7 +536,15 @@ void SDLInputBackend::onInputEvent(const SDL_Event & event) {
 			break;
 		}
 		
-		case SDL_JOYAXISMOTION:
+		case SDL_JOYAXISMOTION: {
+			Uint8 axis = event.jaxis.axis;
+			int value= event.jaxis.value;
+			if (axis==0)	// X axis
+				joyX = std::min(1.0f, std::max(-1.0f, ((float)value)*(1.0f/32000.0f)));
+			else if (axis==1)	// X axis
+				joyY = std::min(1.0f, std::max(-1.0f, ((float)value)*(1.0f/32000.0f)));
+			}
+			break;
 		case SDL_JOYBALLMOTION:
 		case SDL_JOYHATMOTION:
 		case SDL_JOYBUTTONDOWN:

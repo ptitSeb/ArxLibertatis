@@ -62,7 +62,7 @@ bool SDLWindow::initializeFramework() {
 	                             "." ARX_STR(SDL_PATCHLEVEL);
 	CrashHandler::setVariable("SDL version (headers)", headerVersion);
 	
-	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_NOPARACHUTE) < 0) {
+	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_NOPARACHUTE) < 0) {
 		LogError << "Failed to initialize SDL: " << SDL_GetError();
 		return false;
 	}
@@ -163,7 +163,12 @@ bool SDLWindow::initialize(const std::string & title, Vec2i size, bool fullscree
 	depth_ = 0;
 	
 	for(int msaa = config.video.antialiasing ? 8 : 1; msaa >= 0; msaa--) {
-#ifndef HAVE_GLES		
+#ifdef HAVE_GLES
+		if (msaa>1)
+			eglFSAA = 4;
+		else
+			eglFSAA	= 0;
+#else
 		if(msaa > 1) {
 			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, msaa);

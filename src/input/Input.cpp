@@ -259,6 +259,9 @@ void Input::reset() {
 	EERIEMouseButton = 0;
 
 	iWheelDir = 0;
+	
+	joyX = 0.0f;
+	joyY = 0.0f;
 }
 
 void Input::acquireDevices() {
@@ -440,6 +443,10 @@ void Input::update() {
 	} else {
 		mouseInWindow = false;
 	}
+	
+	// Get Joystick position
+	joyX = backend->getAxis(0);
+	joyY = backend->getAxis(1);
 }
 
 std::map<std::string, InputKeyId> keyNames;

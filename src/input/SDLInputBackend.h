@@ -50,6 +50,9 @@ public:
 	// Keyboard
 	bool isKeyboardKeyPressed(int dikkey) const;
 	bool getKeyAsText(int keyId, char& result) const;
+
+	// Joystick
+	virtual float getAxis(int axisId) const;
 	
 private:
 	
@@ -69,6 +72,9 @@ private:
 	size_t currentUnclickCount[Mouse::ButtonCount];
 	
 	Vec2i lastCursorAbs;
+	
+	float joyX, joyY;
+	SDL_Joystick *joystick;
 	
 	friend class SDLWindow;
 };

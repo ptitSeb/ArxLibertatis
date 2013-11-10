@@ -106,6 +106,18 @@ public:
 	bool isKeyPressedNowUnPressed(int keyId) const;
 	bool getKeyAsText(int keyId, char & result) const;
 	
+	// Joystick
+	#define JOY2KEY	0.5f
+	bool joyUp() const { return joyY<-JOY2KEY;}
+	bool joyDown() const { return joyY>JOY2KEY;}
+	bool joyLeft() const { return joyX<-JOY2KEY;}
+	bool joyRight() const { return joyX>JOY2KEY;}
+	#define JOYMIN 0.1f
+	float joyMovUp() const { return (joyY<-JOYMIN)?-joyY:0.0f;}
+	float joyMovDown() const { return (joyY>JOYMIN)?joyY:0.0f;}
+	float joyMovLeft() const { return (joyX<-JOYMIN)?-joyX:0.0f;}
+	float joyMovRight() const { return (joyX>JOYMIN)?joyX:0.0f;}
+	
 private:
 	
 	class InputBackend * backend;
@@ -130,6 +142,9 @@ private:
 	
 	int   iKeyId;                         // Id of the key pressed in the last update
 	int   keysStates[Keyboard::KeyCount]; // 0: up, 1: just pressed/released, 2: pressed
+	
+	// Joystick
+	float joyX, joyY;
 	
 };
 
