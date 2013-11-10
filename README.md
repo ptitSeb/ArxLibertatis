@@ -37,10 +37,12 @@ Systems without Win32 or POSIX filesystem support will also need **Boost 1.44** 
 
 There is currently a single rendering backend for OpenGL, but it can be used on GLES1.1 also:
 
-* **[SDL](http://www.libsdl.org/) 1.2.10**+
+* **[SDL](http://www.libsdl.org/) 1.2.10**
+
 For Pure OpenGL:
 * **OpenGL 1.5**+ (OpenGL 2.1 or newer is recommended)
-* **[GLEW](http://glew.sourceforge.net/) 1.5.2**+
+* **[GLEW](http://glew.sourceforge.net/) 1.5.2**
+
 For GLES:
 * **OpenGL|ES 1.1**+ (CM profile only)
 
