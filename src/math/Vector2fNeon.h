@@ -17,48 +17,55 @@
  * along with Arx Libertatis.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ARX_MATH_VECTOR2_H
-#define ARX_MATH_VECTOR2_H
+#ifndef ARX_MATH_VECTOR2FNEON_H
+#define ARX_MATH_VECTOR2FNEON_H
+
+#ifdef __ARM_NEON__
 
 #include <limits>
 #include <cmath>
 
 #include "math/MathFwd.h"
 
+#include <arm_neon.h>
+
 /*!
  * Representation of a vector in 2d space.
+ * Specialized float for NEON class
  * @brief 2x1 Vector class.
  */
-template <class T>
-class Vector2 {
+class Vec2f {
 	
 public:
 	/*!
 	 * Constructor.
 	 */
-	Vector2() {}
+	Vec2f() {}
 	
 	/*!
 	 * Constructor accepting initial values.
 	 * @param fX A T representing the x-axis.
 	 * @param fY A T representing the y-axis.
 	 */
-	Vector2(T pX, T pY) : x(pX), y(pY) { }
+	Vec2f(float pX, float pY) : x(pX), y(pY) { }
 	
+	/*!
+	 * Constructor accepting initial values.
+	 * @param fXY A float32x2_t representing the x and y axis.
+	 */
+	Vec2f(float32x2_t pXY) : xy(pXY) { }
+
 	/*!
 	 * Copy constructor.
 	 * @param other A vector to be copied.
 	 */
-	Vector2(const Vector2 & other) : x(other.x), y(other.y) { }
-#ifdef __ARM_NEON__
-	Vector2(const Vec2f & other);
-#endif
+	Vec2f(const Vec2f & other) : xy(other.xy) { }
 	
 	/*!
 	 * Conversion constructor.
 	 */
 	template <typename U>
-	explicit Vector2(const Vector2<U> & other) : x(other.x), y(other.y) { }
+	explicit Vec2f(const Vector2<U> & other) : x(other.x), y(other.y) { }
 	
 	/*!
 	 * Set this vector to the content of another vector.
@@ -66,8 +73,13 @@ public:
 	 * @param other A vector to be copied.
 	 * @return Reference to this vector object.
 	 */
-	Vector2 & operator=(const Vector2 & other) {
-		x = other.x, y = other.y;
+	Vec2f & operator=(const Vec2f & other) {
+		xy=other.xy;
+		return *this;
+	}
+	template <typename U>
+	Vec2f & operator=(const Vector2<U> & other) {
+		x=other.x; y=other.y;
 		return *this;
 	}
 	
@@ -77,8 +89,9 @@ public:
 	 * @param other A vector to be compared to.
 	 * @return A boolean, \b true if the two vector are equal(all members are equals), or \b false otherwise.
 	 */
-	bool operator==(const Vector2 & other) const {
-		return (x == other.x && y == other.y);
+	bool operator==(const Vec2f & other) const {
+		uint32x2_t res = vceq_f32(xy, other.xy);
+		return (vget_lane_u32(res, 0) & vget_lane_u32(res, 1)) ;
 	}
 	
 	/*!
@@ -87,7 +100,7 @@ public:
 	 * @param other A vector to be compared to.
 	 * @return A boolean, \b true if the two vector are not equal(all members are not equal), or \b false otherwise.
 	 */
-	bool operator!=(const Vector2 & other) const {
+	bool operator!=(const Vec2f & other) const {
 		return !((*this) == other);
 	}
 	
@@ -96,8 +109,8 @@ public:
 	 * @brief Unary minus operator.
 	 * @return A new vector, same as this one but with the signs of all the elements inverted.
 	 */
-	Vector2 operator-() const {
-		return Vector2(-x, -y);
+	Vec2f operator-() const {
+		return Vec2f(vneg_f32(xy));
 	}
 	
 	/*!
@@ -106,8 +119,8 @@ public:
 	 * @param other a vector, to be added to this vector.
 	 * @return A new vector, the result of the addition of the two vector.
 	 */
-	Vector2 operator+(const Vector2 & other) const {
-		return Vector2(x + other.x, y + other.y);
+	Vec2f operator+(const Vec2f & other) const {
+		return Vec2f(vadd_f32(xy, other.xy));
 	}
 	
 	/*!
@@ -116,8 +129,8 @@ public:
 	 * @param other a vector, to be substracted to this vector.
 	 * @return A new vector, the result of the substraction of the two vector.
 	 */
-	Vector2 operator-(const Vector2 & other) const {
-		return Vector2(x - other.x, y - other.y);
+	Vec2f operator-(const Vec2f & other) const {
+		return Vec2f(vsub_f32(xy, other.xy));
 	}
 	
 	/*!
@@ -126,15 +139,15 @@ public:
 	 * @param other a vector, to be Multiplied to this vector.
 	 * @return A new vector, the result of the Multiplication of the two vector.
 	 */
-	Vector2 operator*(const Vector2 & other) const {
-		return Vector2(x * other.x, y * other.y);
+	Vec2f operator*(const Vec2f & other) const {
+		return Vec2f(vmul_f32(xy, other.xy));
 	}
 	
 	/*!
 	 * Multiply a vector to this vector.
 	 */
-	Vector2 & operator*=(const Vector2 & other) {
-		x *= other.x, y *= other.y;
+	Vec2f & operator*=(const Vec2f & other) {
+		xy=vmul_f32(xy, other.xy);
 		return *this;
 	}
 
@@ -144,8 +157,8 @@ public:
 	 * @param scale value to divide this vector by.
 	 * @return A new vector, the result of the division.
 	 */
-	Vector2 operator/(T scale) const {
-		return Vector2(x / scale, y / scale);
+	Vec2f operator/(float scale) const {
+		return Vec2f(vmul_n_f32(xy, 1.0f/scale));
 	}
 	
 	/*!
@@ -154,8 +167,8 @@ public:
 	 * @param scale The vector will be multiplied by this value.
 	 * @return A new vector which is the result of the operation.
 	 */
-	Vector2 operator*(T scale) const {
-		return Vector2(x * scale, y * scale);
+	Vec2f operator*(float scale) const {
+		return Vec2f(vmul_n_f32(xy, scale));
 	}
 	
 	/*!
@@ -164,8 +177,8 @@ public:
 	 * @param other The vector to add to this vector.
 	 * @return A const reference to this vector.
 	 */
-	const Vector2 & operator+=(const Vector2 & other) {
-		x += other.x, y += other.y;
+	const Vec2f & operator+=(const Vec2f & other) {
+		xy= vadd_f32(xy, other.xy);
 		return *this;
 	}
 	
@@ -175,8 +188,8 @@ public:
 	 * @param other The vector to substract from this vector.
 	 * @return A const reference to this vector.
 	 */
-	const Vector2 & operator-=(const Vector2 & other) {
-		x -= other.x, y -= other.y;
+	const Vec2f & operator-=(const Vec2f & other) {
+		xy=vsub_f32(xy, other.xy);
 		return *this;
 	}
 	
@@ -186,8 +199,8 @@ public:
 	 * @param scale Value to be used for the division.
 	 * @return A const reference to this vector.
 	 */
-	const Vector2 & operator/=(T scale) {
-		x /= scale, y /= scale;
+	const Vec2f & operator/=(float scale) {
+		xy=vmul_n_f32(xy, 1.0f/scale);
 		return *this;
 	}
 	
@@ -197,8 +210,8 @@ public:
 	 * @param scale Value to be used for the multiplication
 	 * @return A const reference to this vector.
 	 */
-	const Vector2 & operator*=(T scale) {
-		x *= scale, y *= scale;
+	const Vec2f & operator*=(float scale) {
+		xy=vmul_n_f32(xy, scale);
 		return *this;
 	}
 	
@@ -208,7 +221,7 @@ public:
 	 * @param pIndex Index of the element to obtain.
 	 * @return A reference to the element at index pIndex.
 	 */
-	T & operator()(const int & pIndex) {
+	float & operator()(const int & pIndex) {
 		return elem[pIndex];
 	}
 	
@@ -217,7 +230,7 @@ public:
 	 * @brief Indirection operator(const).
 	 * @return Internal array used to store the vector values.
 	 */
-	operator const T*() const {
+	operator const float*() const {
 		return elem;
 	}
 	
@@ -226,7 +239,7 @@ public:
 	 * @brief Indirection operator.
 	 * @return Internal array used to store the vector values.
 	 */
-	operator T*() {
+	operator float*() {
 		return elem;
 	}
 	
@@ -235,12 +248,20 @@ public:
 	 * @brief Normalize the vector.
 	 * @return Reference to the vector.
 	 */
-	const Vector2 & normalize() {
+	const Vec2f & normalize() {
 		
-		T length = length();
+		float length = lengthSqr();
 		arx_assert(length != 0);
-		length = 1/length;
-		x *= length, y *= length;
+
+		//	length = 1.0f/length;
+		
+		float32x2_t a,b;
+		b=vdup_n_f32(length);
+		a=vrsqrte_f32(b);
+		a=vmul_f32(a,vrsqrts_f32(vmul_f32(b,a), a));
+//		a=vmul_f32(a,vrsqrts_f32(vmul_f32(a,a), b));
+
+		xy = vmul_f32(xy, a);
 		return *this;
 	}
 	
@@ -249,9 +270,17 @@ public:
 	 * @brief Create a normalized copy of this vector.
 	 * @return A normalized copy of the vector.
 	 */
-	Vector2 getNormalized() const {
-		arx_assert(length() != 0);
-		return ((*this) / length());
+	Vec2f getNormalized() const {
+		float length = lengthSqr();
+		arx_assert(length != 0);
+		float32x2_t a,b;
+		b=vdup_n_f32(length);
+		a=vrsqrte_f32(b);
+		a=vmul_f32(a,vrsqrts_f32(vmul_f32(b,a), a));
+		return Vec2f(vmul_f32(xy, a));
+		//a=vmul_f32(a,vrsqrts_f32(b, vmul_f32(a,a)));*/	// some precisions issue here it seems
+
+		//return Vec2f(vmul_n_f32(xy, 1.0f/sqrt(length)));
 	}
 	
 	/*!
@@ -265,16 +294,18 @@ public:
 	 * Get the length of this vector.
 	 * @return The length of this vector.
 	 */
-	T length() const {
-		return sqrt(x*x + y*y);
+	float length() const {
+		float32x2_t a=vmul_f32(xy, xy);
+		return sqrt(vget_lane_f32(vpadd_f32(a,a),0));
 	}
 	
 	/*!
 	 * Get the squared length of this vector.
 	 * @return The squared length of this vector.
 	 */
-	T lengthSqr() const {
-		return x*x + y*y;
+	float lengthSqr() const {
+		float32x2_t a=vmul_f32(xy, xy);
+		return vget_lane_f32(vpadd_f32(a,a),0);
 	}
 	
 	/*!
@@ -282,12 +313,12 @@ public:
 	 * @param other The other vector.
 	 * @return The distance between the two vectors.
 	 */
-	T distanceFrom(const Vector2 & other) const {
-		return Vector2(other - *this).length();
+	float distanceFrom(const Vec2f & other) const {
+		return Vec2f(other - *this).length();
 	}
 	
-	T distanceFromSqr(const Vector2 & other) const {
-		return Vector2(other - *this).lengthSqr();
+	float distanceFromSqr(const Vec2f & other) const {
+		return Vec2f(other - *this).lengthSqr();
 	}
 	
 	/*!
@@ -296,16 +327,19 @@ public:
 	 * @param pEps The epsilon value.
 	 * @return \bTrue if the vectors values fit in the epsilon range.
 	 */
-	bool equalEps(const Vector2 & other, T pEps = std::numeric_limits<T>::epsilon()) const {
-		return x > (other.x - pEps) && x < (other.x + pEps) && y > (other.y - pEps) && y < (other.y + pEps);
+	bool equalEps(const Vec2f & other, float pEps = std::numeric_limits<float>::epsilon()) const {
+		float32x2_t fEps=vdup_n_f32(pEps);
+		uint32x2_t a=vand_u32(vcgt_f32 (xy, vsub_f32(other.xy, fEps)) , vclt_f32 (xy, vadd_f32(other.xy, fEps)));
+		return vget_lane_u32(a, 0) & vget_lane_u32(a, 1);
 	}
 	
 	union {
-		T elem[2]; //!< This vector as a 2 elements array.
+		float elem[2]; //!< This vector as a 2 elements array.
 		struct {
-			T x; //!< X component of the vector.
-			T y; //!< Y component of the vector.
+			float x; //!< X component of the vector.
+			float y; //!< Y component of the vector.
 		};
+		float32x2_t xy;	//!< XY NEON Helper
 	};
 	
 	template <typename O>
@@ -313,41 +347,39 @@ public:
 		return Vector2<O>(O(x), O(y));
 	}
 	
-	static const Vector2 X_AXIS; //!< The X axis.
-	static const Vector2 Y_AXIS; //!< The Y axis.
-	static const Vector2 ZERO; //!< A null vector.
-	static const Vector2 ONE; //!< A (1, 1) vector.
+	static const Vec2f X_AXIS; //!< The X axis.
+	static const Vec2f Y_AXIS; //!< The Y axis.
+	static const Vec2f ZERO; //!< A null vector.
+	static const Vec2f ONE; //!< A (1, 1) vector.
 	
 };
 
-template<class T>
-inline T dist(const Vector2<T> & a, const Vector2<T> & b) {
+inline float dist(const Vec2f & a, const Vec2f & b) {
 	return a.distanceFrom(b);
 }
 
-template<class T>
-inline T distSqr(const Vector2<T> & a, const Vector2<T> & b) {
+inline float distSqr(const Vec2f & a, const Vec2f & b) {
 	return a.distanceFromSqr(b);
 }
 
-template<class T>
-inline bool closerThan(const Vector2<T> & a, const Vector2<T> & b, T d) {
-	return (distSqr(a, b) < (d * d));
+inline bool closerThan(const Vec2f & a, const Vec2f & b, float d) {
+	float32x2_t ab=vsub_f32(a.xy, b.xy);
+	float32x2_t dd=vdup_n_f32(d);
+	ab=vmul_f32(ab, ab);
+	uint32x2_t res=vclt_f32(vpadd_f32(ab,ab), vmul_f32(dd, dd));
+	return vget_lane_u32(res, 0);
+}
+
+inline bool fartherThan(const Vec2f & a, const Vec2f & b, float d) {
+	float32x2_t ab=vsub_f32(a.xy, b.xy);
+	float32x2_t dd=vdup_n_f32(d);
+	ab=vmul_f32(ab, ab);
+	uint32x2_t res=vcgt_f32(vpadd_f32(ab,ab), vmul_f32(dd, dd));
+	return vget_lane_u32(res, 0);
 }
 
 template<class T>
-inline bool fartherThan(const Vector2<T> & a, const Vector2<T> & b, T d) {
-	return (distSqr(a, b) > (d * d));
-}
+Vector2<T>::Vector2(const Vec2f & other) : x(other.x), y(other.y) { }
 
-// Constants
-template<class T> const Vector2<T> Vector2<T>::X_AXIS(T(1), T(0));
-template<class T> const Vector2<T> Vector2<T>::Y_AXIS(T(0), T(1));
-template<class T> const Vector2<T> Vector2<T>::ZERO(T(0), T(0));
-template<class T> const Vector2<T> Vector2<T>::ONE(T(1), T(1));
-
-#ifdef __ARM_NEON__
-#include "Vector2fNeon.h"
-#endif
-
+#endif	// __ARM_NEON__
 #endif // ARX_MATH_VECTOR2_H

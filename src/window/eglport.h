@@ -56,6 +56,8 @@ extern int8_t	eglColorbits;
 extern int8_t	eglDepthbits;
 extern int8_t	eglStencilbits;
 
+extern int8_t	eglFSAA;
+
 /** Simple Examples  */
 /**     Raw mode:
             EGL_Open( window_width, window_height );

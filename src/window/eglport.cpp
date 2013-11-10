@@ -93,6 +93,8 @@ int8_t	eglColorbits 	= 0;
 int8_t	eglDepthbits	= 0;
 int8_t	eglStencilbits	= 0;
 
+int8_t	eglFSAA			= 0;
+
 
 /** Private API */
 void        OpenCfg                 ( const char* file );
@@ -345,7 +347,7 @@ void OpenCfg ( const char* file )
     eglSettings[CFG_MODE]           = RENDER_RAW;
 #endif
     eglSettings[CFG_VSYNC]          = 0;
-    eglSettings[CFG_FSAA]           = 0;
+    eglSettings[CFG_FSAA]           = eglFSAA;
     eglSettings[CFG_FPS]            = 0;
     eglSettings[CFG_RED_SIZE]       = 5;
     eglSettings[CFG_GREEN_SIZE]     = 6;

@@ -48,7 +48,6 @@ option(USE_QT4 "Use Qt 4 if available" ON)
 option(PANDORA "Set to ON if targeting an OpenPandora device" ${PANDORA})
 option(GLES "Set to ON to build GLES renderer instead of OpenGL" ${GLES})
 
-
 # Build types
 option(UNITY_BUILD "Unity build" OFF)
 option(DEBUG_EXTRA "Expensive debug options" OFF)
@@ -684,6 +683,7 @@ set(IO_FILESYSTEM_WINDOWS_SOURCES src/io/fs/FilesystemWindows.cpp)
 set(MATH_SOURCES
 	src/math/Angle.cpp
 	src/math/Random.cpp
+	src/math/VectorNeon.cpp
 )
 
 set(PHYSICS_SOURCES
