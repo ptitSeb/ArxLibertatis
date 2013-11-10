@@ -138,8 +138,11 @@ void ARX_FOGS_TimeReset()
 }
 
 void AddPoisonFog(Vec3f * pos, float power) {
-	
+#ifdef PANDORA	
+	int iDiv = 5;
+#else
 	int iDiv = 4 - config.video.levelOfDetail;
+#endif
 	
 	float flDiv = static_cast<float>(1 << iDiv);
 	
@@ -178,7 +181,11 @@ void ARX_FOGS_Render() {
 		return;
 	}
 	
+#ifdef PANDORA	
+	int iDiv = 5;
+#else
 	int iDiv = 4 - config.video.levelOfDetail;
+#endif
 	
 	float flDiv = static_cast<float>(1 << iDiv);
 	
