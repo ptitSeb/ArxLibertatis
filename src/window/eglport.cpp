@@ -341,11 +341,11 @@ void OpenCfg ( const char* file )
     strncpy( eglStrings[CFG_STENCIL_SIZE], "size_stencil=", MAX_STRING );
 
     /* Set defaults */
-#if defined(USE_EGL_SDL)
-    eglSettings[CFG_MODE]           = RENDER_SDL;
-#else
+//#if defined(USE_EGL_SDL)
+//    eglSettings[CFG_MODE]           = RENDER_SDL;
+//#else
     eglSettings[CFG_MODE]           = RENDER_RAW;
-#endif
+//#endif
     eglSettings[CFG_VSYNC]          = 0;
     eglSettings[CFG_FSAA]           = eglFSAA;
     eglSettings[CFG_FPS]            = 0;
@@ -379,7 +379,7 @@ void OpenCfg ( const char* file )
     }
     else
     {
-        printf( "EGL ERROR: Unable to read ini settings from file '%s'. Using defaults\n", file );
+        printf( "EGL NOTICE: Unable to read ini settings from file '%s'. Using defaults\n", file );
     }
 }
 
