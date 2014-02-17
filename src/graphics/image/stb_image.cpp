@@ -3164,6 +3164,15 @@ static stbi_uc *tga_load(stbi *s, int *x, int *y, int *comp, int req_comp)
    {
       for (j = 0; j*2 < tga_height; ++j)
       {
+		#ifdef PANDORA
+		const int taille = tga_width * req_comp;
+		unsigned char* index1 = tga_data + (j * taille);
+		unsigned char* index2 = tga_data + ((tga_height - 1 - j) * taille);
+		unsigned char temp[taille];
+		memcpy(temp, index1, taille);
+		memcpy(index1, index2, taille);
+		memcpy(index2, temp, taille);
+		#else
          int index1 = j * tga_width * req_comp;
          int index2 = (tga_height - 1 - j) * tga_width * req_comp;
          for (i = tga_width * req_comp; i > 0; --i)
@@ -3174,6 +3183,7 @@ static stbi_uc *tga_load(stbi *s, int *x, int *y, int *comp, int req_comp)
             ++index1;
             ++index2;
          }
+		#endif
       }
    }
    //   clear my palette, if I had one
