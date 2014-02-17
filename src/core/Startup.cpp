@@ -75,6 +75,8 @@ static void showCommandLineHelp(const util::cmdline::interpreter<std::string> & 
 	
 }
 
+bool noshouldermb = false;
+
 static void handleHelpOption() {
 	
 	// Register all program options in the command line interpreter
@@ -86,7 +88,14 @@ static void handleHelpOption() {
 	std::exit(EXIT_SUCCESS);
 }
 
+static void handleNoShoulderButton() {
+		noshouldermb = true;
+}
+
 ARX_PROGRAM_OPTION("help", "h", "Show supported options", &handleHelpOption);
+#ifdef PANDORA
+ARX_PROGRAM_OPTION("noshouldermb", "s", "Disable use of shoulder as mouse buttons", &handleNoShoulderButton);
+#endif
 
 static ExitStatus parseCommandLine(int argc, char ** argv) {
 	
